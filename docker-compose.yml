@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    env_file:
+      - backend/.env
+    volumes:
+      - ./docs:/workspace/docs
+      - ${PUBLISH_REPO_DIR:-~/Projects/LLM_Knowledge_Base}:/publish-repo
+    environment:
+      - PUBLISH_REPO_DIR=/publish-repo
+    working_dir: /app
+    restart: unless-stopped

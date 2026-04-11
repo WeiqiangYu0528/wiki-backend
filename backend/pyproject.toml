@@ -1,0 +1,24 @@
+[project]
+name = "mkdocs-ai-backend"
+version = "0.1.0"
+description = "Agentic backend for MkDocs Chatbox Widget"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]",
+    "uvicorn",
+    "langchain",
+    "langchain-openai",
+    "litellm",
+    "langgraph",
+    "pyotp",
+    "python-jose[cryptography]",
+    "passlib[bcrypt]",
+    "python-multipart",
+    "pydantic-settings",
+    "python-dotenv",
+    "httpx",
+]
+
+[tool.uv]
+package = false
