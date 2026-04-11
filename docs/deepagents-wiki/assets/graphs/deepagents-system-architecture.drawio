@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mxfile host="app.diagrams.net" version="29.0.0">
+  <diagram id="deepagents-architecture" name="Deep Agents Architecture">
+    <mxGraphModel dx="1660" dy="960" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="920" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="panel-inputs" value="Filesystem-First Inputs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="260" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="panel-core" value="SDK Core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="120" width="330" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="panel-surfaces" value="Surfaces and Feedback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="120" width="520" height="410" as="geometry" />
+        </mxCell>
+        <mxCell id="panel-execution" value="Execution and Hosting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="560" width="930" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="skills" value="Skills System&#xa;SKILL.md sources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="165" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="memory" value="Memory System&#xa;AGENTS.md sources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="252" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="subagents" value="Subagent System&#xa;inline • async • filesystem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="339" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="graph-factory" value="Graph Factory&#xa;create_deep_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="395" y="192" width="240" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="compiled-agent" value="Compiled LangGraph Agent&#xa;planning • file ops • patching&#xa;summarization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="380" y="314" width="270" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="cli-runtime" value="CLI Runtime + Textual UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="165" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="acp-server" value="ACP Server&#xa;editor host bridge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="165" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="example-agents" value="Example Agents&#xa;reference implementations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="272" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="evals-system" value="Evals System&#xa;behavioral feedback loop" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="272" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="cli-policy" value="CLI Policy Layer&#xa;MCP • web tools • session recovery • approvals • sandbox choice" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="388" width="430" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="backend-system" value="Backend System&#xa;state • filesystem • local shell • composite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="410" y="610" width="320" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="sandbox-partners" value="Sandbox Partners&#xa;Daytona • Modal • Runloop • QuickJS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="610" width="360" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-skills-graph" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.28;entryPerimeter=1;" edge="1" parent="1" source="skills" target="graph-factory">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="193" />
+              <mxPoint x="320" y="214" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-memory-graph" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="memory" target="graph-factory">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="336" y="280" />
+              <mxPoint x="336" y="228" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-subagents-graph" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.72;entryPerimeter=1;" edge="1" parent="1" source="subagents" target="graph-factory">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="352" y="367" />
+              <mxPoint x="352" y="252" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-graph-agent" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.8;strokeColor=#333333;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="graph-factory" target="compiled-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-cli-policy-graph" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.32;entryPerimeter=1;" edge="1" parent="1" source="cli-policy" target="graph-factory">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="429" />
+              <mxPoint x="720" y="229" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-cli-runtime-policy" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0.86;exitY=1;exitPerimeter=1;entryX=0.36;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="cli-runtime" target="cli-policy">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="980" y="248" />
+              <mxPoint x="980" y="388" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-example-graph" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.68;entryPerimeter=1;" edge="1" parent="1" source="example-agents" target="graph-factory">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="300" />
+              <mxPoint x="720" y="247" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-acp-agent" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.46;entryPerimeter=1;" edge="1" parent="1" source="acp-server" target="compiled-agent">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1008" y="193" />
+              <mxPoint x="1008" y="361" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-evals-agent" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;strokeWidth=1.6;strokeColor=#333333;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.76;entryPerimeter=1;" edge="1" parent="1" source="evals-system" target="compiled-agent">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1032" y="300" />
+              <mxPoint x="1032" y="388" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-backend-agent" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.8;strokeColor=#333333;exitX=0.5;exitY=0;exitPerimeter=1;entryX=0.5;entryY=1;entryPerimeter=1;" edge="1" parent="1" source="backend-system" target="compiled-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-partners-backend" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="sandbox-partners" target="backend-system">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

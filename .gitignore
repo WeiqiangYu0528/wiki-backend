@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 backend/.env
+token
 
 # Python
 __pycache__/
@@ -24,3 +25,19 @@ build/
 
 # MkDocs
 site/
+
+# Third-party cloned repos
+autogen/
+deepagents/
+openclaw/
+opencode/
+hermes-agent/
+
+# Editor config
+.obsidian/
+.superpowers/
+
+# Generated outputs
+wiki-outputs/
+wiki-outputs-copy/
+log.md

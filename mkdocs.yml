@@ -1,0 +1,294 @@
+site_name: Knowledge Base
+site_description: Structured architecture wikis for multiple codebases
+site_url: ""
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.instant
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - toc.integrate
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home:
+      - Index: index.md
+      - Claude Code Depth Standard: depth-standard.md
+      - Publishing Workflow: publishing-workflow.md
+  - Claude Code:
+      - Index: claude-code/index.md
+      - Summaries:
+          - Architecture Overview: claude-code/summaries/architecture-overview.md
+          - Codebase Map: claude-code/summaries/codebase-map.md
+          - Glossary: claude-code/summaries/glossary.md
+      - Entities:
+          - Agent System: claude-code/entities/agent-system.md
+          - Bridge System: claude-code/entities/bridge-system.md
+          - Command System: claude-code/entities/command-system.md
+          - Configuration System: claude-code/entities/configuration-system.md
+          - MCP System: claude-code/entities/mcp-system.md
+          - Memory System: claude-code/entities/memory-system.md
+          - Permission System: claude-code/entities/permission-system.md
+          - Plugin System: claude-code/entities/plugin-system.md
+          - Query Engine: claude-code/entities/query-engine.md
+          - Skill System: claude-code/entities/skill-system.md
+          - State Management: claude-code/entities/state-management.md
+          - Task System: claude-code/entities/task-system.md
+          - Tool System: claude-code/entities/tool-system.md
+      - Concepts:
+          - Agent Isolation: claude-code/concepts/agent-isolation.md
+          - Compaction & Context Management: claude-code/concepts/compaction-and-context-management.md
+          - Error Handling Patterns: claude-code/concepts/error-handling-patterns.md
+          - Execution Flow: claude-code/concepts/execution-flow.md
+          - Frontmatter Conventions: claude-code/concepts/frontmatter-conventions.md
+          - Hook System: claude-code/concepts/hook-system.md
+          - Message Types & Streaming: claude-code/concepts/message-types-and-streaming.md
+          - Permission Model: claude-code/concepts/permission-model.md
+          - Session Lifecycle: claude-code/concepts/session-lifecycle.md
+          - Settings Hierarchy: claude-code/concepts/settings-hierarchy.md
+          - Tool Permission Gating: claude-code/concepts/tool-permission-gating.md
+      - Syntheses:
+          - Agent-Tool-Skill Triad: claude-code/syntheses/agent-tool-skill-triad.md
+          - Configuration Resolution Chain: claude-code/syntheses/configuration-resolution-chain.md
+          - MCP Integration Architecture: claude-code/syntheses/mcp-integration-architecture.md
+          - Permission Enforcement Pipeline: claude-code/syntheses/permission-enforcement-pipeline.md
+          - Plugin Extension Model: claude-code/syntheses/plugin-extension-model.md
+          - Query Loop Orchestration: claude-code/syntheses/query-loop-orchestration.md
+          - State-Driven Rendering: claude-code/syntheses/state-driven-rendering.md
+          - Task Execution & Isolation: claude-code/syntheses/task-execution-and-isolation.md
+      - Log: claude-code/log.md
+      - Schema: claude-code/schema.md
+  - Deep Agents:
+      - Index: deepagents-wiki/index.md
+      - Summaries:
+          - Architecture Overview: deepagents-wiki/summaries/architecture-overview.md
+          - Codebase Map: deepagents-wiki/summaries/codebase-map.md
+          - Glossary: deepagents-wiki/summaries/glossary.md
+      - Entities:
+          - Graph Factory: deepagents-wiki/entities/graph-factory.md
+          - Backend System: deepagents-wiki/entities/backend-system.md
+          - Subagent System: deepagents-wiki/entities/subagent-system.md
+          - Skills System: deepagents-wiki/entities/skills-system.md
+          - Memory System: deepagents-wiki/entities/memory-system.md
+          - CLI Runtime: deepagents-wiki/entities/cli-runtime.md
+          - CLI Textual UI: deepagents-wiki/entities/cli-textual-ui.md
+          - Session Persistence: deepagents-wiki/entities/session-persistence.md
+          - MCP System: deepagents-wiki/entities/mcp-system.md
+          - ACP Server: deepagents-wiki/entities/acp-server.md
+          - Evals System: deepagents-wiki/entities/evals-system.md
+          - Sandbox Partners: deepagents-wiki/entities/sandbox-partners.md
+          - Example Agents: deepagents-wiki/entities/example-agents.md
+      - Concepts:
+          - Batteries Included Agent Architecture: deepagents-wiki/concepts/batteries-included-agent-architecture.md
+          - Filesystem First Agent Configuration: deepagents-wiki/concepts/filesystem-first-agent-configuration.md
+          - Context Management and Summarization: deepagents-wiki/concepts/context-management-and-summarization.md
+          - Human in the Loop Approval: deepagents-wiki/concepts/human-in-the-loop-approval.md
+          - Local vs Remote Execution: deepagents-wiki/concepts/local-vs-remote-execution.md
+          - Monorepo Package Layering: deepagents-wiki/concepts/monorepo-package-layering.md
+      - Syntheses:
+          - SDK to CLI Composition: deepagents-wiki/syntheses/sdk-to-cli-composition.md
+          - Interactive Session Lifecycle: deepagents-wiki/syntheses/interactive-session-lifecycle.md
+          - Agent Customization Surface: deepagents-wiki/syntheses/agent-customization-surface.md
+          - Remote Subagent and Sandbox Flow: deepagents-wiki/syntheses/remote-subagent-and-sandbox-flow.md
+          - Evaluation Feedback Loop: deepagents-wiki/syntheses/evaluation-feedback-loop.md
+      - Log: deepagents-wiki/log.md
+      - Schema: deepagents-wiki/schema.md
+  - OpenCode:
+      - Index: opencode-wiki/index.md
+      - Summaries:
+          - Architecture Overview: opencode-wiki/summaries/architecture-overview.md
+          - Codebase Map: opencode-wiki/summaries/codebase-map.md
+          - Glossary: opencode-wiki/summaries/glossary.md
+      - Entities:
+          - CLI Runtime: opencode-wiki/entities/cli-runtime.md
+          - Session System: opencode-wiki/entities/session-system.md
+          - Tool System: opencode-wiki/entities/tool-system.md
+          - Provider System: opencode-wiki/entities/provider-system.md
+          - Permission System: opencode-wiki/entities/permission-system.md
+          - Project and Instance System: opencode-wiki/entities/project-and-instance-system.md
+          - Control Plane and Workspaces: opencode-wiki/entities/control-plane-and-workspaces.md
+          - Server API: opencode-wiki/entities/server-api.md
+          - Plugin System: opencode-wiki/entities/plugin-system.md
+          - MCP and ACP Integration: opencode-wiki/entities/mcp-and-acp-integration.md
+          - LSP and Code Intelligence: opencode-wiki/entities/lsp-and-code-intelligence.md
+          - Storage and Sync: opencode-wiki/entities/storage-and-sync.md
+          - UI Client Surfaces: opencode-wiki/entities/ui-client-surfaces.md
+          - Desktop and Remote Clients: opencode-wiki/entities/desktop-and-remote-clients.md
+      - Concepts:
+          - Client Server Agent Architecture: opencode-wiki/concepts/client-server-agent-architecture.md
+          - Provider Agnostic Model Routing: opencode-wiki/concepts/provider-agnostic-model-routing.md
+          - Project Scoped Instance Lifecycle: opencode-wiki/concepts/project-scoped-instance-lifecycle.md
+          - Permission and Approval Gating: opencode-wiki/concepts/permission-and-approval-gating.md
+          - Tool and Agent Composition: opencode-wiki/concepts/tool-and-agent-composition.md
+          - Plugin Driven Extensibility: opencode-wiki/concepts/plugin-driven-extensibility.md
+      - Syntheses:
+          - Request to Session Execution Flow: opencode-wiki/syntheses/request-to-session-execution-flow.md
+          - Workspace Routing and Remote Control: opencode-wiki/syntheses/workspace-routing-and-remote-control.md
+          - Multi Client Product Architecture: opencode-wiki/syntheses/multi-client-product-architecture.md
+          - Context Compaction and Session Recovery: opencode-wiki/syntheses/context-compaction-and-session-recovery.md
+          - Provider Tool Plugin Interaction Model: opencode-wiki/syntheses/provider-tool-plugin-interaction-model.md
+      - Log: opencode-wiki/log.md
+      - Schema: opencode-wiki/schema.md
+  - OpenClaw:
+      - Index: openclaw-wiki/index.md
+      - Summaries:
+          - Architecture Overview: openclaw-wiki/summaries/architecture-overview.md
+          - Codebase Map: openclaw-wiki/summaries/codebase-map.md
+          - Glossary: openclaw-wiki/summaries/glossary.md
+      - Entities:
+          - Gateway Control Plane: openclaw-wiki/entities/gateway-control-plane.md
+          - CLI and Onboarding: openclaw-wiki/entities/cli-and-onboarding.md
+          - Agent Runtime: openclaw-wiki/entities/agent-runtime.md
+          - Session System: openclaw-wiki/entities/session-system.md
+          - Channel System: openclaw-wiki/entities/channel-system.md
+          - Channel Plugin Adapters: openclaw-wiki/entities/channel-plugin-adapters.md
+          - Plugin Platform: openclaw-wiki/entities/plugin-platform.md
+          - Provider and Model System: openclaw-wiki/entities/provider-and-model-system.md
+          - Routing System: openclaw-wiki/entities/routing-system.md
+          - Automation and Cron: openclaw-wiki/entities/automation-and-cron.md
+          - Canvas and Control UI: openclaw-wiki/entities/canvas-and-control-ui.md
+          - Node Host and Device Pairing: openclaw-wiki/entities/node-host-and-device-pairing.md
+          - MCP and ACP Bridges: openclaw-wiki/entities/mcp-and-acp-bridges.md
+          - Media and Voice Stack: openclaw-wiki/entities/media-and-voice-stack.md
+          - Skills Platform: openclaw-wiki/entities/skills-platform.md
+          - Native Apps and Platform Clients: openclaw-wiki/entities/native-apps-and-platform-clients.md
+      - Concepts:
+          - Local First Personal Assistant Architecture: openclaw-wiki/concepts/local-first-personal-assistant-architecture.md
+          - Gateway as Control Plane: openclaw-wiki/concepts/gateway-as-control-plane.md
+          - Multi Channel Session Routing: openclaw-wiki/concepts/multi-channel-session-routing.md
+          - Pluginized Capability Delivery: openclaw-wiki/concepts/pluginized-capability-delivery.md
+          - Device Augmented Agent Architecture: openclaw-wiki/concepts/device-augmented-agent-architecture.md
+          - Auth and Approval Boundaries: openclaw-wiki/concepts/auth-and-approval-boundaries.md
+          - Isolated Agent Automation: openclaw-wiki/concepts/isolated-agent-automation.md
+      - Syntheses:
+          - Inbound Message to Agent Reply Flow: openclaw-wiki/syntheses/inbound-message-to-agent-reply-flow.md
+          - Onboarding to Live Gateway Flow: openclaw-wiki/syntheses/onboarding-to-live-gateway-flow.md
+          - Extension to Runtime Capability Flow: openclaw-wiki/syntheses/extension-to-runtime-capability-flow.md
+          - Scheduled Job Delivery Flow: openclaw-wiki/syntheses/scheduled-job-delivery-flow.md
+          - Channel Binding and Session Identity Flow: openclaw-wiki/syntheses/channel-binding-and-session-identity-flow.md
+          - Canvas Voice and Device Control Loop: openclaw-wiki/syntheses/canvas-voice-and-device-control-loop.md
+      - Log: openclaw-wiki/log.md
+      - Schema: openclaw-wiki/schema.md
+  - AutoGen:
+      - Index: autogen-wiki/index.md
+      - Summaries:
+          - Architecture Overview: autogen-wiki/summaries/architecture-overview.md
+          - Codebase Map: autogen-wiki/summaries/codebase-map.md
+          - Glossary: autogen-wiki/summaries/glossary.md
+      - Entities:
+          - Python Core Runtime: autogen-wiki/entities/python-core-runtime.md
+          - Python AgentChat: autogen-wiki/entities/python-agentchat.md
+          - Python Extensions: autogen-wiki/entities/python-extensions.md
+          - Model Client and Provider System: autogen-wiki/entities/model-client-and-provider-system.md
+          - Tool and Code Execution System: autogen-wiki/entities/tool-and-code-execution-system.md
+          - Memory and Model Context: autogen-wiki/entities/memory-and-model-context.md
+          - Distributed Runtime and Worker System: autogen-wiki/entities/distributed-runtime-and-worker-system.md
+          - Protocol Contracts: autogen-wiki/entities/protocol-contracts.md
+          - AutoGen Studio: autogen-wiki/entities/autogen-studio.md
+          - AutoGen Bench: autogen-wiki/entities/agbench.md
+          - Magentic-One: autogen-wiki/entities/magentic-one.md
+          - Dotnet Runtime Stack: autogen-wiki/entities/dotnet-runtime-stack.md
+          - Package and Distribution Surface: autogen-wiki/entities/package-and-distribution-surface.md
+          - Component Schema and Test Tooling: autogen-wiki/entities/component-schema-and-test-tooling.md
+      - Concepts:
+          - Layered API Architecture: autogen-wiki/concepts/layered-api-architecture.md
+          - Event-Driven Agent Programming Model: autogen-wiki/concepts/event-driven-agent-programming-model.md
+          - Local to Distributed Runtime Scaling: autogen-wiki/concepts/local-to-distributed-runtime-scaling.md
+          - Tool-Augmented Agent Execution: autogen-wiki/concepts/tool-augmented-agent-execution.md
+          - Protocol-Mediated Cross-Language Runtime: autogen-wiki/concepts/protocol-mediated-cross-language-runtime.md
+          - Studio as Prototyping Surface: autogen-wiki/concepts/studio-as-prototyping-surface.md
+          - Benchmark-Driven Agent Evaluation: autogen-wiki/concepts/benchmark-driven-agent-evaluation.md
+      - Syntheses:
+          - Core to AgentChat to Extension Composition: autogen-wiki/syntheses/core-to-agentchat-to-extension-composition.md
+          - Distributed Agent Worker Lifecycle: autogen-wiki/syntheses/distributed-agent-worker-lifecycle.md
+          - Studio on Top of Framework Flow: autogen-wiki/syntheses/studio-on-top-of-framework-flow.md
+          - Benchmark and Agent Runtime Feedback Loop: autogen-wiki/syntheses/benchmark-and-agent-runtime-feedback-loop.md
+          - Python and Dotnet Ecosystem Relationship: autogen-wiki/syntheses/python-and-dotnet-ecosystem-relationship.md
+          - Package Selection and Entrypoint Flow: autogen-wiki/syntheses/package-selection-and-entrypoint-flow.md
+      - Log: autogen-wiki/log.md
+      - Schema: autogen-wiki/schema.md
+  - Hermes Agent:
+      - Index: hermes-agent-wiki/index.md
+      - Summaries:
+          - Architecture Overview: hermes-agent-wiki/summaries/architecture-overview.md
+          - Codebase Map: hermes-agent-wiki/summaries/codebase-map.md
+          - Glossary: hermes-agent-wiki/summaries/glossary.md
+      - Entities:
+          - Agent Loop Runtime: hermes-agent-wiki/entities/agent-loop-runtime.md
+          - Prompt Assembly System: hermes-agent-wiki/entities/prompt-assembly-system.md
+          - Provider Runtime: hermes-agent-wiki/entities/provider-runtime.md
+          - Tool Registry and Dispatch: hermes-agent-wiki/entities/tool-registry-and-dispatch.md
+          - Terminal and Execution Environments: hermes-agent-wiki/entities/terminal-and-execution-environments.md
+          - Skills System: hermes-agent-wiki/entities/skills-system.md
+          - Memory and Learning Loop: hermes-agent-wiki/entities/memory-and-learning-loop.md
+          - Session Storage: hermes-agent-wiki/entities/session-storage.md
+          - CLI Runtime: hermes-agent-wiki/entities/cli-runtime.md
+          - Config and Profile System: hermes-agent-wiki/entities/config-and-profile-system.md
+          - Gateway Runtime: hermes-agent-wiki/entities/gateway-runtime.md
+          - Messaging Platform Adapters: hermes-agent-wiki/entities/messaging-platform-adapters.md
+          - Cron System: hermes-agent-wiki/entities/cron-system.md
+          - Plugin and Memory Provider System: hermes-agent-wiki/entities/plugin-and-memory-provider-system.md
+          - ACP Adapter: hermes-agent-wiki/entities/acp-adapter.md
+          - Research and Batch Surfaces: hermes-agent-wiki/entities/research-and-batch-surfaces.md
+      - Concepts:
+          - Self-Improving Agent Architecture: hermes-agent-wiki/concepts/self-improving-agent-architecture.md
+          - Prompt Layering and Cache Stability: hermes-agent-wiki/concepts/prompt-layering-and-cache-stability.md
+          - Toolset-Based Capability Governance: hermes-agent-wiki/concepts/toolset-based-capability-governance.md
+          - Multi-Surface Session Continuity: hermes-agent-wiki/concepts/multi-surface-session-continuity.md
+          - Environment Abstraction for Agent Execution: hermes-agent-wiki/concepts/environment-abstraction-for-agent-execution.md
+          - Cross-Session Recall and Memory Provider Pluggability: hermes-agent-wiki/concepts/cross-session-recall-and-memory-provider-pluggability.md
+          - Interruption and Human Approval Flow: hermes-agent-wiki/concepts/interruption-and-human-approval-flow.md
+      - Syntheses:
+          - CLI to Agent Loop Composition: hermes-agent-wiki/syntheses/cli-to-agent-loop-composition.md
+          - Gateway Message to Agent Reply Flow: hermes-agent-wiki/syntheses/gateway-message-to-agent-reply-flow.md
+          - Tool Call Execution and Approval Pipeline: hermes-agent-wiki/syntheses/tool-call-execution-and-approval-pipeline.md
+          - Compression Memory and Session Search Loop: hermes-agent-wiki/syntheses/compression-memory-and-session-search-loop.md
+          - Cron Delivery and Platform Routing: hermes-agent-wiki/syntheses/cron-delivery-and-platform-routing.md
+          - ACP Editor Session Bridge: hermes-agent-wiki/syntheses/acp-editor-session-bridge.md
+      - Log: hermes-agent-wiki/log.md
+      - Schema: hermes-agent-wiki/schema.md
+
+exclude_docs: |
+  claude_code/
+  .obsidian/
+  tools-wiki/
+
+extra_css:
+  - stylesheets/chatbox.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/marked/marked.min.js
+
+  - javascripts/chatbox.js

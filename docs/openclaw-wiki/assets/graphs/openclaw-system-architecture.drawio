@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mxfile host="app.diagrams.net" version="29.0.0">
+  <diagram id="openclaw-architecture" name="OpenClaw System Architecture">
+    <mxGraphModel dx="1660" dy="960" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="OpenClaw System Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="36" y="22" width="420" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="A gateway-owned local-first assistant platform with channels, plugins, routing, agent execution, and embodied device surfaces" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="36" y="56" width="980" height="22" as="geometry" />
+        </mxCell>
+
+        <mxCell id="panel-ingress" value="Ingress and User Surfaces" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="36" y="112" width="290" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="panel-core" value="Gateway-Owned Runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="112" width="520" height="410" as="geometry" />
+        </mxCell>
+        <mxCell id="panel-capabilities" value="Capability Supply Chain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="932" y="112" width="338" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="panel-extensions" value="Embodied and Background Surfaces" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f7f7;strokeColor=#b3b3b3;dashed=1;align=left;verticalAlign=top;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="560" width="900" height="172" as="geometry" />
+        </mxCell>
+
+        <mxCell id="channels" value="Channels&#xa;chat networks · inbound events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="72" y="170" width="218" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="apps" value="Native Apps&#xa;desktop · mobile · control clients" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="72" y="272" width="218" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="devices" value="Devices and Voice&#xa;paired nodes · media · voice" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="72" y="374" width="218" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gateway" value="Gateway Control Plane&#xa;config · identity · policy · plugin bootstrap&#xa;sessions · channels · UI serving" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="482" y="158" width="296" height="102" as="geometry" />
+        </mxCell>
+        <mxCell id="session" value="Session System&#xa;transcripts · lifecycle · provenance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="406" y="314" width="178" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="routing" value="Routing System&#xa;account · binding · peer resolution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="676" y="314" width="178" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="agent-runtime" value="Agent Runtime&#xa;Pi runtime · tools · prompts · execution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="518" y="420" width="224" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="plugin-platform" value="Plugin Platform&#xa;discovery · manifests · activation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="998" y="164" width="206" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="providers" value="Providers&#xa;models&#xa;auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="958" y="306" width="92" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="skills" value="Skills&#xa;bundled&#xa;workspace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1054" y="306" width="92" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="channel-adapters" value="Channel&#xa;Adapters&#xa;plugins" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="306" width="92" height="82" as="geometry" />
+        </mxCell>
+
+        <mxCell id="automation" value="Automation and Cron&#xa;scheduled isolated jobs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="432" y="618" width="220" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="canvas" value="Canvas and Control UI&#xa;A2UI · control plane surfaces" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="710" y="618" width="220" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="node-host" value="Node Host and Device Pairing&#xa;remote execution · device invoke" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="988" y="618" width="240" height="68" as="geometry" />
+        </mxCell>
+
+        <mxCell id="surface-bus" value="" style="endArrow=none;html=1;rounded=0;strokeWidth=1.6;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="510" y="594" as="sourcePoint" />
+            <mxPoint x="1108" y="594" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="sources" value="Source anchors: src/gateway/server.impl.ts · src/plugins/loader.ts · src/channels/registry.ts · src/gateway/server-cron.ts · src/channels/plugins/load.ts" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="292" y="768" width="770" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-channels-gateway" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.26;entryPerimeter=1;" edge="1" parent="1" source="channels" target="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="334" y="202" />
+              <mxPoint x="334" y="184" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-apps-gateway" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="apps" target="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="334" y="304" />
+              <mxPoint x="334" y="209" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-devices-gateway" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.74;entryPerimeter=1;" edge="1" parent="1" source="devices" target="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="334" y="406" />
+              <mxPoint x="334" y="235" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge-gateway-session" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.7;strokeColor=#333333;exitX=0.05;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="gateway" target="session">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="495" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-gateway-routing" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.7;strokeColor=#333333;exitX=0.95;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="gateway" target="routing">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="765" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-session-agent" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0.72;exitY=1;exitPerimeter=1;entryX=0.22;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="session" target="agent-runtime">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="530" y="404" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-routing-agent" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0.28;exitY=1;exitPerimeter=1;entryX=0.78;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="routing" target="agent-runtime">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="404" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge-gateway-plugin" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.7;strokeColor=#333333;exitX=1;exitY=0.42;exitPerimeter=1;entryX=0;entryY=0.42;entryPerimeter=1;" edge="1" parent="1" source="gateway" target="plugin-platform">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="912" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-providers-plugin" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0.5;exitY=0;exitPerimeter=1;entryX=0.03;entryY=1;entryPerimeter=1;" edge="1" parent="1" source="providers" target="plugin-platform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-skills-plugin" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0.5;exitY=0;exitPerimeter=1;entryX=0.5;entryY=1;entryPerimeter=1;" edge="1" parent="1" source="skills" target="plugin-platform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-adapters-plugin" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#333333;exitX=0.5;exitY=0;exitPerimeter=1;entryX=0.96;entryY=1;entryPerimeter=1;" edge="1" parent="1" source="channel-adapters" target="plugin-platform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-gateway-bus" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#666666;exitX=1;exitY=0.72;exitPerimeter=1;" edge="1" parent="1" source="gateway">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="908" y="232" />
+              <mxPoint x="908" y="594" />
+            </Array>
+            <mxPoint x="908" y="594" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-bus-automation" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="542" y="594" as="sourcePoint" />
+            <mxPoint x="542" y="618" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-bus-canvas" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="820" y="594" as="sourcePoint" />
+            <mxPoint x="820" y="618" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-bus-node" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.6;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1108" y="594" as="sourcePoint" />
+            <mxPoint x="1108" y="618" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
