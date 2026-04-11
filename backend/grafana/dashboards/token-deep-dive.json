@@ -1,0 +1,56 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "token-deep-dive",
+    "title": "Token Deep-Dive",
+    "tags": ["agent", "tokens"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Input vs Output Tokens",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {"expr": "sum(agent_tokens_total{direction=\"input\"})", "legendFormat": "input"},
+          {"expr": "sum(agent_tokens_total{direction=\"output\"})", "legendFormat": "output"}
+        ],
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "fieldConfig": {"defaults": {"custom": {"stacking": {"mode": "normal"}}}}
+      },
+      {
+        "id": 2,
+        "title": "Prompt Size Distribution",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [{"expr": "sum(rate(agent_prompt_tokens_bucket[5m])) by (le)", "format": "heatmap"}],
+        "datasource": {"type": "prometheus", "uid": "prometheus"}
+      },
+      {
+        "id": 3,
+        "title": "Tokens by Model",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [{"expr": "sum(agent_tokens_total) by (model, direction)", "format": "table", "instant": true}],
+        "datasource": {"type": "prometheus", "uid": "prometheus"}
+      },
+      {
+        "id": 4,
+        "title": "LLM Calls per Request (avg)",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
+        "targets": [{"expr": "sum(agent_llm_calls_total) / sum(agent_requests_total)", "legendFormat": "avg calls"}],
+        "datasource": {"type": "prometheus", "uid": "prometheus"}
+      },
+      {
+        "id": 5,
+        "title": "Avg Tokens per Request",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+        "targets": [{"expr": "sum(agent_tokens_total) / sum(agent_requests_total)", "legendFormat": "avg tokens"}],
+        "datasource": {"type": "prometheus", "uid": "prometheus"}
+      }
+    ]
+  }
+}
