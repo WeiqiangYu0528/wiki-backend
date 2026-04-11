@@ -128,3 +128,35 @@ assert recent[0]["id"] == "req-001"
 print("PASS")
 
 os.unlink(tmp_db)
+
+# --- TEST 10: Full observability init + metrics + store integration ---
+print("\n=== TEST 10: Integration: init → metrics → store ===")
+from observability import init_observability, ObservabilityConfig, AgentMetrics, RequestTraceStore
+
+cfg = ObservabilityConfig(enabled=True, otel_endpoint="http://localhost:4317")
+init_observability(cfg)
+
+m = AgentMetrics()
+m.requests_total.add(1, {"model": "gpt-4o", "status": "success"})
+m.tokens_total.add(500, {"model": "gpt-4o", "direction": "input"})
+m.tokens_total.add(100, {"model": "gpt-4o", "direction": "output"})
+m.request_duration.record(2.5, {"model": "gpt-4o"})
+m.llm_calls_total.add(1, {"model": "gpt-4o", "iteration": "1"})
+m.tool_calls_total.add(1, {"tool_name": "search_knowledge_base", "status": "success"})
+print("Metrics recorded OK")
+
+tmp_db2 = os.path.join(tempfile.mkdtemp(), "integration_traces.db")
+store = RequestTraceStore(db_path=tmp_db2)
+store.write(
+    request_id="int-001", model="gpt-4o", query="test integration",
+    status="success", total_tokens=600, input_tokens=500, output_tokens=100,
+    llm_calls=1, tool_calls=1, search_calls=1, prompt_chars=2000,
+    duration_ms=2500, tools_used="search_knowledge_base",
+)
+rows = store.recent(limit=1)
+assert len(rows) == 1
+assert rows[0]["total_tokens"] == 600
+os.unlink(tmp_db2)
+print("PASS")
+
+print("\n✅ All observability tests passed.")
