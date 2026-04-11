@@ -49,3 +49,17 @@ try:
 except ValueError as e:
     assert str(e) == "test error"
 print("PASS")
+
+from observability.metrics import AgentMetrics
+
+# --- TEST 5: metrics objects created ---
+print("\n=== TEST 5: AgentMetrics ===")
+m = AgentMetrics()
+assert m.requests_total is not None
+assert m.llm_calls_total is not None
+assert m.tool_calls_total is not None
+assert m.tokens_total is not None
+assert m.request_duration is not None
+assert m.llm_call_duration is not None
+assert m.prompt_tokens_hist is not None
+print("PASS")
