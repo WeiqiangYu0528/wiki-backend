@@ -10,7 +10,11 @@ services:
     volumes:
       - ./docs:/workspace/docs
       - ${PUBLISH_REPO_DIR:-~/Projects/LLM_Knowledge_Base}:/publish-repo
+      - ./deepagents:/workspace/deepagents
+      - ./autogen:/workspace/autogen
+      - ./opencode:/workspace/opencode
+      - ./openclaw:/workspace/openclaw
+      - ./hermes-agent:/workspace/hermes-agent
     environment:
       - PUBLISH_REPO_DIR=/publish-repo
-    working_dir: /app
     restart: unless-stopped

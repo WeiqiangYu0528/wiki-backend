@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-WORKDIR /app
+WORKDIR /workspace/backend
 
 COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --no-dev --frozen
