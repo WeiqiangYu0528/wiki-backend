@@ -63,3 +63,22 @@ assert m.request_duration is not None
 assert m.llm_call_duration is not None
 assert m.prompt_tokens_hist is not None
 print("PASS")
+
+from observability.tokens import estimate_tokens, extract_usage_metadata
+
+# --- TEST 6: estimate_tokens ---
+print("\n=== TEST 6: estimate_tokens ===")
+assert estimate_tokens("hello world") == 3  # 11 chars / 4 = 2.75 → 3
+assert estimate_tokens("") == 0
+assert estimate_tokens("a" * 400) == 100  # 400 / 4
+print("PASS")
+
+# --- TEST 7: extract_usage_metadata from dict ---
+print("\n=== TEST 7: extract_usage_metadata ===")
+usage = extract_usage_metadata({"usage_metadata": {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150}})
+assert usage == {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150}
+
+# Missing usage
+usage2 = extract_usage_metadata({})
+assert usage2 == {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+print("PASS")
