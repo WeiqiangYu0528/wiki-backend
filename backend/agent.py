@@ -1,12 +1,23 @@
 import os
 import re
 import subprocess
+import time
+import uuid
 import warnings
 from typing import AsyncGenerator, Literal, Optional
 
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from opentelemetry import trace
 from pydantic_settings import BaseSettings
+
+from observability import (
+    get_tracer,
+    AgentMetrics,
+    RequestTraceStore,
+    estimate_tokens,
+    extract_usage_metadata,
+)
 
 warnings.filterwarnings("ignore", category=UserWarning, module="langgraph")
 from langgraph.prebuilt import create_react_agent  # noqa: E402
@@ -347,6 +358,18 @@ Documentation updates:
     return prompt
 
 
+def _measure_prompt(system_prompt: str, history: list, query: str) -> dict:
+    """Measure prompt assembly sizes for observability."""
+    history_chars = sum(len(content) for _, content in history)
+    return {
+        "system_prompt_chars": len(system_prompt),
+        "history_turns": len(history),
+        "history_chars": history_chars,
+        "query_chars": len(query),
+        "total_chars": len(system_prompt) + history_chars + len(query),
+    }
+
+
 # --- HISTORY HELPERS ---
 
 def _format_history(chat_history: list) -> list:
@@ -367,20 +390,79 @@ def run_agent(
     chat_history: list,
     model_id: str = "deepseek",
     page_context: Optional[dict] = None,
+    agent_metrics: Optional[AgentMetrics] = None,
+    trace_store: Optional[RequestTraceStore] = None,
 ) -> str:
     """Blocking agent execution (kept for backward compatibility with /chat endpoint)."""
-    llm = get_chat_model(model_id)
-    agent = create_react_agent(llm, tools=tools)
+    tracer = get_tracer()
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
 
-    messages = [("system", build_system_prompt(page_context))]
-    messages.extend(_format_history(chat_history))
-    messages.append(("user", query))
+    with tracer.start_as_current_span("agent.react_loop") as span:
+        span.set_attribute("request.id", request_id)
+        span.set_attribute("request.model", model_id)
+        span.set_attribute("request.query", query[:200])
 
-    try:
-        response = agent.invoke({"messages": messages})
-        return response["messages"][-1].content
-    except Exception as e:
-        return f"Agent execution failed: {e}"
+        llm = get_chat_model(model_id)
+        agent = create_react_agent(llm, tools=tools)
+
+        system_prompt = build_system_prompt(page_context)
+        history = _format_history(chat_history)
+        messages = [("system", system_prompt)]
+        messages.extend(history)
+        messages.append(("user", query))
+
+        prompt_info = _measure_prompt(system_prompt, history, query)
+        span.set_attribute("prompt.total_chars", prompt_info["total_chars"])
+        span.set_attribute("prompt.history_turns", prompt_info["history_turns"])
+        span.set_attribute("prompt.system_prompt_chars", prompt_info["system_prompt_chars"])
+
+        try:
+            response = agent.invoke({"messages": messages})
+            reply = response["messages"][-1].content
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            # Extract token usage from the last AI message
+            last_msg = response["messages"][-1]
+            usage = extract_usage_metadata(last_msg)
+
+            span.set_attribute("llm.total_tokens", usage["total_tokens"])
+            span.set_attribute("agent.duration_ms", duration_ms)
+
+            if agent_metrics:
+                agent_metrics.requests_total.add(1, {"model": model_id, "status": "success"})
+                agent_metrics.request_duration.record(duration_ms / 1000, {"model": model_id})
+                if usage["total_tokens"]:
+                    agent_metrics.tokens_total.add(usage["input_tokens"], {"model": model_id, "direction": "input"})
+                    agent_metrics.tokens_total.add(usage["output_tokens"], {"model": model_id, "direction": "output"})
+
+            if trace_store:
+                trace_store.write(
+                    request_id=request_id,
+                    model=model_id,
+                    query=query,
+                    status="success",
+                    total_tokens=usage["total_tokens"],
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    prompt_chars=prompt_info["total_chars"],
+                    duration_ms=duration_ms,
+                )
+
+            return reply
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            span.set_status(trace.StatusCode.ERROR, str(e))
+            span.record_exception(e)
+            if agent_metrics:
+                agent_metrics.requests_total.add(1, {"model": model_id, "status": "error"})
+                agent_metrics.errors_total.add(1, {"stage": "agent", "error_type": type(e).__name__})
+            if trace_store:
+                trace_store.write(
+                    request_id=request_id, model=model_id, query=query, status="error",
+                    duration_ms=duration_ms, error_message=str(e)[:500],
+                )
+            return f"Agent execution failed: {e}"
 
 
 async def run_agent_stream(
@@ -388,75 +470,216 @@ async def run_agent_stream(
     chat_history: list,
     model_id: str = "deepseek",
     page_context: Optional[dict] = None,
+    agent_metrics: Optional[AgentMetrics] = None,
+    trace_store: Optional[RequestTraceStore] = None,
 ) -> AsyncGenerator[dict, None]:
-    """Streaming agent execution. Yields event dicts as newline-delimited JSON."""
-    llm = get_chat_model(model_id)
-    agent = create_react_agent(llm, tools=tools)
+    """Streaming agent execution with full observability."""
+    tracer = get_tracer()
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
 
-    messages = [("system", build_system_prompt(page_context))]
-    messages.extend(_format_history(chat_history))
-    messages.append(("user", query))
+    # Accumulators for trace summary
+    total_input_tokens = 0
+    total_output_tokens = 0
+    llm_call_count = 0
+    tool_call_count = 0
+    search_call_count = 0
+    tools_used: list[str] = []
+    retrieval_chars = 0
 
-    cited_files: set[str] = set()
+    with tracer.start_as_current_span("agent.react_loop") as root_span:
+        root_span.set_attribute("request.id", request_id)
+        root_span.set_attribute("request.model", model_id)
+        root_span.set_attribute("request.query", query[:200])
 
-    try:
-        async for event in agent.astream_events({"messages": messages}, version="v2"):
-            event_type = event["event"]
+        llm = get_chat_model(model_id)
+        agent = create_react_agent(llm, tools=tools)
 
-            if event_type == "on_chat_model_stream":
-                chunk = event["data"]["chunk"]
-                content = chunk.content if hasattr(chunk, "content") else ""
-                if isinstance(content, str) and content:
-                    yield {"type": "token", "content": content}
+        system_prompt = build_system_prompt(page_context)
+        history = _format_history(chat_history)
+        messages = [("system", system_prompt)]
+        messages.extend(history)
+        messages.append(("user", query))
 
-            elif event_type == "on_tool_start":
-                tool_name = event["name"]
-                tool_input = event["data"].get("input", {})
-                yield {"type": "tool_call", "name": tool_name, "input": str(tool_input)[:200]}
+        prompt_info = _measure_prompt(system_prompt, history, query)
+        root_span.set_attribute("prompt.total_chars", prompt_info["total_chars"])
+        root_span.set_attribute("prompt.history_turns", prompt_info["history_turns"])
+        root_span.set_attribute("prompt.system_prompt_chars", prompt_info["system_prompt_chars"])
 
-                if tool_name == "read_workspace_file" and isinstance(tool_input, dict):
-                    path = tool_input.get("file_path", "").strip().lstrip("/")
-                    if path:
-                        cited_files.add(path)
+        cited_files: set[str] = set()
+        active_tool_spans: dict[str, trace.Span] = {}
+        tool_start_times: dict[str, float] = {}
 
-                elif tool_name == "read_source_file" and isinstance(tool_input, dict):
-                    ns = tool_input.get("namespace", "")
-                    path = tool_input.get("file_path", "").strip().lstrip("/")
-                    if ns and path and ns in SOURCE_ROOTS:
-                        cited_files.add(f"{SOURCE_ROOTS[ns]}/{path}")
+        try:
+            async for event in agent.astream_events({"messages": messages}, version="v2"):
+                event_type = event["event"]
 
-            elif event_type == "on_tool_end":
-                tool_name = event["name"]
-                output = event["data"].get("output", "")
+                if event_type == "on_chat_model_stream":
+                    chunk = event["data"]["chunk"]
+                    content = chunk.content if hasattr(chunk, "content") else ""
+                    if isinstance(content, str) and content:
+                        yield {"type": "token", "content": content}
 
-                if tool_name == "search_knowledge_base" and isinstance(output, str):
-                    for line in output.splitlines():
-                        m = re.match(r"^(docs/[\w/\-]+\.md):", line)
-                        if m:
-                            cited_files.add(m.group(1))
+                    # Check for usage metadata on stream end
+                    if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                        usage = chunk.usage_metadata
+                        total_input_tokens += usage.get("input_tokens", 0) or 0
+                        total_output_tokens += usage.get("output_tokens", 0) or 0
 
-                elif tool_name == "propose_doc_change" and isinstance(output, str):
-                    pid_match = re.search(r"Proposal ID: `(\w+)`", output)
-                    if pid_match:
-                        from proposals import proposal_store as _ps
-                        pid = pid_match.group(1)
-                        prop = _ps.get(pid)
-                        if prop:
-                            yield {
-                                "type": "proposal",
-                                "proposal_id": pid,
-                                "summary": prop.summary,
-                                "commit_message": prop.commit_message,
-                                "files": [
-                                    {"path": f.path, "diff": f.diff}
-                                    for f in prop.files
-                                ],
-                            }
+                elif event_type == "on_chat_model_start":
+                    llm_call_count += 1
+                    if agent_metrics:
+                        agent_metrics.llm_calls_total.add(1, {"model": model_id, "iteration": str(llm_call_count)})
 
-        if cited_files:
-            yield {"type": "citations", "sources": sorted(cited_files)}
-        yield {"type": "done"}
+                elif event_type == "on_tool_start":
+                    tool_name = event["name"]
+                    tool_input = event["data"].get("input", {})
+                    run_id = event.get("run_id", tool_name)
 
-    except Exception as e:
-        yield {"type": "error", "detail": str(e)}
-        yield {"type": "done"}
+                    tool_call_count += 1
+                    tools_used.append(tool_name)
+
+                    # Create a child span for this tool call
+                    tool_span = tracer.start_span(
+                        f"tool.{tool_name}",
+                        attributes={
+                            "tool.name": tool_name,
+                            "tool.input": str(tool_input)[:500],
+                        },
+                    )
+                    active_tool_spans[run_id] = tool_span
+                    tool_start_times[run_id] = time.time()
+
+                    if tool_name in ("search_knowledge_base", "smart_search", "find_symbol"):
+                        search_call_count += 1
+
+                    yield {"type": "tool_call", "name": tool_name, "input": str(tool_input)[:200]}
+
+                    if tool_name == "read_workspace_file" and isinstance(tool_input, dict):
+                        path = tool_input.get("file_path", "").strip().lstrip("/")
+                        if path:
+                            cited_files.add(path)
+                    elif tool_name == "read_source_file" and isinstance(tool_input, dict):
+                        ns = tool_input.get("namespace", "")
+                        path = tool_input.get("file_path", "").strip().lstrip("/")
+                        if ns and path and ns in SOURCE_ROOTS:
+                            cited_files.add(f"{SOURCE_ROOTS[ns]}/{path}")
+
+                elif event_type == "on_tool_end":
+                    tool_name = event["name"]
+                    output = event["data"].get("output", "")
+                    run_id = event.get("run_id", tool_name)
+
+                    output_size = len(output) if isinstance(output, str) else 0
+                    retrieval_chars += output_size
+
+                    # Close the tool span
+                    tool_span = active_tool_spans.pop(run_id, None)
+                    if tool_span:
+                        tool_duration = time.time() - tool_start_times.pop(run_id, time.time())
+                        tool_span.set_attribute("tool.output_size", output_size)
+                        tool_span.set_attribute("tool.status", "success")
+                        tool_span.end()
+                        if agent_metrics:
+                            agent_metrics.tool_calls_total.add(1, {"tool_name": tool_name, "status": "success"})
+                            agent_metrics.tool_call_duration.record(tool_duration, {"tool_name": tool_name})
+
+                    if tool_name == "search_knowledge_base" and isinstance(output, str):
+                        for line in output.splitlines():
+                            m = re.match(r"^(docs/[\w/\-]+\.md):", line)
+                            if m:
+                                cited_files.add(m.group(1))
+
+                    elif tool_name == "propose_doc_change" and isinstance(output, str):
+                        pid_match = re.search(r"Proposal ID: `(\w+)`", output)
+                        if pid_match:
+                            from proposals import proposal_store as _ps
+                            pid = pid_match.group(1)
+                            prop = _ps.get(pid)
+                            if prop:
+                                yield {
+                                    "type": "proposal",
+                                    "proposal_id": pid,
+                                    "summary": prop.summary,
+                                    "commit_message": prop.commit_message,
+                                    "files": [
+                                        {"path": f.path, "diff": f.diff}
+                                        for f in prop.files
+                                    ],
+                                }
+
+            # --- Request complete: record summary ---
+            duration_ms = int((time.time() - start_time) * 1000)
+            total_tokens = total_input_tokens + total_output_tokens
+
+            # If no usage metadata was available, estimate from prompt size
+            if total_tokens == 0:
+                total_input_tokens = estimate_tokens(
+                    system_prompt + query + "".join(c for _, c in history)
+                )
+                total_tokens = total_input_tokens
+
+            root_span.set_attribute("agent.total_tokens", total_tokens)
+            root_span.set_attribute("agent.input_tokens", total_input_tokens)
+            root_span.set_attribute("agent.output_tokens", total_output_tokens)
+            root_span.set_attribute("agent.llm_calls", llm_call_count)
+            root_span.set_attribute("agent.tool_calls", tool_call_count)
+            root_span.set_attribute("agent.search_calls", search_call_count)
+            root_span.set_attribute("agent.retrieval_chars", retrieval_chars)
+            root_span.set_attribute("agent.citations_count", len(cited_files))
+            root_span.set_attribute("agent.duration_ms", duration_ms)
+
+            if agent_metrics:
+                agent_metrics.requests_total.add(1, {"model": model_id, "status": "success"})
+                agent_metrics.request_duration.record(duration_ms / 1000, {"model": model_id})
+                agent_metrics.tokens_total.add(total_input_tokens, {"model": model_id, "direction": "input"})
+                agent_metrics.tokens_total.add(total_output_tokens, {"model": model_id, "direction": "output"})
+                agent_metrics.prompt_tokens_hist.record(prompt_info["total_chars"] // 4, {"model": model_id})
+                agent_metrics.retrieval_chars_hist.record(retrieval_chars)
+
+            if trace_store:
+                trace_store.write(
+                    request_id=request_id,
+                    model=model_id,
+                    query=query,
+                    status="success",
+                    total_tokens=total_tokens,
+                    input_tokens=total_input_tokens,
+                    output_tokens=total_output_tokens,
+                    llm_calls=llm_call_count,
+                    tool_calls=tool_call_count,
+                    search_calls=search_call_count,
+                    prompt_chars=prompt_info["total_chars"],
+                    retrieval_chars=retrieval_chars,
+                    citations_count=len(cited_files),
+                    duration_ms=duration_ms,
+                    tools_used=",".join(tools_used),
+                )
+
+            if cited_files:
+                yield {"type": "citations", "sources": sorted(cited_files)}
+            yield {"type": "done"}
+
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            root_span.set_status(trace.StatusCode.ERROR, str(e))
+            root_span.record_exception(e)
+
+            # Clean up any open tool spans
+            for span_obj in active_tool_spans.values():
+                span_obj.set_attribute("tool.status", "error")
+                span_obj.end()
+
+            if agent_metrics:
+                agent_metrics.requests_total.add(1, {"model": model_id, "status": "error"})
+                agent_metrics.errors_total.add(1, {"stage": "agent", "error_type": type(e).__name__})
+
+            if trace_store:
+                trace_store.write(
+                    request_id=request_id, model=model_id, query=query, status="error",
+                    llm_calls=llm_call_count, tool_calls=tool_call_count,
+                    duration_ms=duration_ms, error_message=str(e)[:500],
+                )
+
+            yield {"type": "error", "detail": str(e)}
+            yield {"type": "done"}
