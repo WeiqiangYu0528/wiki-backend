@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status
@@ -15,8 +16,18 @@ from security import (
 from agent import run_agent, run_agent_stream, ROOT_DIR
 from proposals import proposal_store, ProposalStatus
 from git_workflow import GitWorkflow, GitWorkflowError
+from observability import init_observability, ObservabilityConfig, AgentMetrics, RequestTraceStore
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry import trace
 
 app = FastAPI(title="MkDocs Agentic Chatbox API")
+
+# --- Observability ---
+obs_config = ObservabilityConfig()
+init_observability(obs_config)
+agent_metrics = AgentMetrics()
+trace_store = RequestTraceStore(db_path=obs_config.sqlite_path)
+FastAPIInstrumentor.instrument_app(app)
 
 # Allow requests from the local mkdocs frontend (or github pages if deployed)
 app.add_middleware(
@@ -26,6 +37,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+        span = trace.get_current_span()
+        if span.is_recording():
+            span.set_attribute("request.id", request_id)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+app.add_middleware(RequestIdMiddleware)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -94,6 +121,8 @@ def chat_endpoint(request: ChatRequest, current_user: str = Depends(get_current_
             chat_history=history_dict,
             model_id=request.model,
             page_context=request.page_context,
+            agent_metrics=agent_metrics,
+            trace_store=trace_store,
         )
         return {"reply": reply}
     except Exception as e:
@@ -102,13 +131,7 @@ def chat_endpoint(request: ChatRequest, current_user: str = Depends(get_current_
 
 @app.post("/chat/stream")
 async def chat_stream_endpoint(request: ChatRequest, current_user: str = Depends(get_current_user)):
-    """Streaming chat endpoint. Returns newline-delimited JSON events:
-    - {"type":"token","content":"..."}      — LLM token chunk
-    - {"type":"tool_call","name":"..."}     — agent invoking a tool
-    - {"type":"citations","sources":[...]}  — files used to answer
-    - {"type":"done"}                       — stream complete
-    - {"type":"error","detail":"..."}       — on failure
-    """
+    """Streaming chat endpoint. Returns newline-delimited JSON events."""
     history_dict = [{"role": msg.role, "content": msg.content} for msg in request.history]
 
     async def event_generator():
@@ -118,6 +141,8 @@ async def chat_stream_endpoint(request: ChatRequest, current_user: str = Depends
                 chat_history=history_dict,
                 model_id=request.model,
                 page_context=request.page_context,
+                agent_metrics=agent_metrics,
+                trace_store=trace_store,
             ):
                 yield json.dumps(event) + "\n"
         except Exception as e:
