@@ -45,10 +45,11 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
+        response = await call_next(request)
+        # Set request.id on span AFTER call_next, when FastAPIInstrumentor span exists
         span = trace.get_current_span()
         if span.is_recording():
             span.set_attribute("request.id", request_id)
-        response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         return response
 
@@ -131,7 +132,13 @@ def chat_endpoint(request: ChatRequest, current_user: str = Depends(get_current_
 
 @app.post("/chat/stream")
 async def chat_stream_endpoint(request: ChatRequest, current_user: str = Depends(get_current_user)):
-    """Streaming chat endpoint. Returns newline-delimited JSON events."""
+    """Streaming chat endpoint. Returns newline-delimited JSON events:
+    - {"type":"token","content":"..."}      — LLM token chunk
+    - {"type":"tool_call","name":"..."}     — agent invoking a tool
+    - {"type":"citations","sources":[...]}  — files used to answer
+    - {"type":"done"}                       — stream complete
+    - {"type":"error","detail":"..."}       — on failure
+    """
     history_dict = [{"role": msg.role, "content": msg.content} for msg in request.history]
 
     async def event_generator():

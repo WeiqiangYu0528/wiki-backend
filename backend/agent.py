@@ -422,9 +422,18 @@ def run_agent(
             reply = response["messages"][-1].content
             duration_ms = int((time.time() - start_time) * 1000)
 
-            # Extract token usage from the last AI message
-            last_msg = response["messages"][-1]
-            usage = extract_usage_metadata(last_msg)
+            # Extract token usage from ALL AI messages (multi-turn ReAct loop)
+            total_input = 0
+            total_output = 0
+            for msg in response["messages"]:
+                msg_usage = extract_usage_metadata(msg)
+                total_input += msg_usage["input_tokens"]
+                total_output += msg_usage["output_tokens"]
+            usage = {
+                "input_tokens": total_input,
+                "output_tokens": total_output,
+                "total_tokens": total_input + total_output,
+            }
 
             span.set_attribute("llm.total_tokens", usage["total_tokens"])
             span.set_attribute("agent.duration_ms", duration_ms)
@@ -576,7 +585,7 @@ async def run_agent_stream(
                     # Close the tool span
                     tool_span = active_tool_spans.pop(run_id, None)
                     if tool_span:
-                        tool_duration = time.time() - tool_start_times.pop(run_id, time.time())
+                        tool_duration = max(0.0, time.time() - tool_start_times.pop(run_id, start_time))
                         tool_span.set_attribute("tool.output_size", output_size)
                         tool_span.set_attribute("tool.status", "success")
                         tool_span.end()
@@ -613,11 +622,13 @@ async def run_agent_stream(
             total_tokens = total_input_tokens + total_output_tokens
 
             # If no usage metadata was available, estimate from prompt size
-            if total_tokens == 0:
+            estimated = total_tokens == 0
+            if estimated:
                 total_input_tokens = estimate_tokens(
                     system_prompt + query + "".join(c for _, c in history)
                 )
                 total_tokens = total_input_tokens
+            root_span.set_attribute("agent.tokens_estimated", estimated)
 
             root_span.set_attribute("agent.total_tokens", total_tokens)
             root_span.set_attribute("agent.input_tokens", total_input_tokens)
@@ -634,7 +645,7 @@ async def run_agent_stream(
                 agent_metrics.request_duration.record(duration_ms / 1000, {"model": model_id})
                 agent_metrics.tokens_total.add(total_input_tokens, {"model": model_id, "direction": "input"})
                 agent_metrics.tokens_total.add(total_output_tokens, {"model": model_id, "direction": "output"})
-                agent_metrics.prompt_tokens_hist.record(prompt_info["total_chars"] // 4, {"model": model_id})
+                agent_metrics.prompt_tokens_hist.record(estimate_tokens(system_prompt + query + "".join(c for _, c in history)), {"model": model_id})
                 agent_metrics.retrieval_chars_hist.record(retrieval_chars)
 
             if trace_store:
