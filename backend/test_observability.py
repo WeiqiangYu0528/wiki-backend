@@ -82,3 +82,49 @@ assert usage == {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150}
 usage2 = extract_usage_metadata({})
 assert usage2 == {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 print("PASS")
+
+import tempfile, os
+from observability.trace_store import RequestTraceStore
+
+# --- TEST 8: trace store write + read ---
+print("\n=== TEST 8: RequestTraceStore ===")
+tmp_db = os.path.join(tempfile.mkdtemp(), "test_traces.db")
+store = RequestTraceStore(db_path=tmp_db)
+
+store.write(
+    request_id="req-001",
+    model="gpt-4o",
+    query="how does the tool system work",
+    status="success",
+    total_tokens=1500,
+    input_tokens=1200,
+    output_tokens=300,
+    llm_calls=2,
+    tool_calls=3,
+    search_calls=1,
+    embedding_calls=1,
+    prompt_chars=4800,
+    retrieval_chars=2000,
+    citations_count=2,
+    duration_ms=5400,
+    tiers_used="lexical,semantic",
+    tools_used="search_knowledge_base,read_workspace_file,read_workspace_file",
+)
+
+rows = store.query("SELECT * FROM request_traces WHERE id = 'req-001'")
+assert len(rows) == 1
+row = rows[0]
+assert row["model"] == "gpt-4o"
+assert row["total_tokens"] == 1500
+assert row["llm_calls"] == 2
+assert row["tiers_used"] == "lexical,semantic"
+print("PASS")
+
+# --- TEST 9: trace store recent ---
+print("\n=== TEST 9: trace store recent query ===")
+recent = store.recent(limit=5)
+assert len(recent) == 1
+assert recent[0]["id"] == "req-001"
+print("PASS")
+
+os.unlink(tmp_db)
