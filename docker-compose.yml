@@ -15,6 +15,7 @@ services:
       - ./opencode:/workspace/opencode
       - ./openclaw:/workspace/openclaw
       - ./hermes-agent:/workspace/hermes-agent
+      - ./claude_code:/workspace/claude_code
     environment:
       - PUBLISH_REPO_DIR=/publish-repo
     restart: unless-stopped
