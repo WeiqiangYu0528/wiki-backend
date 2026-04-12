@@ -22,9 +22,11 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OTEL_OTEL_ENDPOINT=http://otel-collector:4317
       - OTEL_ENABLED=true
+      - MEILISEARCH_URL=http://meilisearch:7700
     depends_on:
       - otel-collector
       - ollama
+      - meilisearch
     restart: unless-stopped
 
   ollama:
@@ -33,6 +35,19 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_EXPERIMENTAL_VECTOR_STORE: "true"
+    mem_limit: 256m
     restart: unless-stopped
 
   otel-collector:
@@ -87,3 +102,4 @@ services:
 volumes:
   ollama_data:
   backend_data:
+  meili_data:
