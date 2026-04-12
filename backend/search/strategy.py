@@ -1,5 +1,13 @@
 """Search strategy engine with loop prevention and escalation."""
 
+from typing import TypedDict
+
+
+class SearchAttempt(TypedDict):
+    query: str
+    result_count: int
+    strategy: str
+
 
 class SearchStrategyEngine:
     """Tracks search attempts per request and manages strategy escalation.
@@ -18,7 +26,7 @@ class SearchStrategyEngine:
     MAX_ATTEMPTS_PER_STRATEGY = 3
 
     def __init__(self) -> None:
-        self.attempts: list[dict] = []
+        self.attempts: list[SearchAttempt] = []
         self.current_strategy_idx: int = 0
         self._consecutive_failures: int = 0
 
