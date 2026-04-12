@@ -6,10 +6,27 @@ import threading
 
 from langchain_core.tools import tool
 
+from search.strategy import SearchStrategyEngine
+
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 _orchestrator = None
 _lock = threading.Lock()
+
+# Per-request strategy engine — reset by agent before each request
+_strategy_engine: SearchStrategyEngine | None = None
+
+
+def get_strategy_engine() -> SearchStrategyEngine:
+    global _strategy_engine
+    if _strategy_engine is None:
+        _strategy_engine = SearchStrategyEngine()
+    return _strategy_engine
+
+
+def reset_strategy_engine() -> None:
+    global _strategy_engine
+    _strategy_engine = SearchStrategyEngine()
 
 
 def get_orchestrator():
@@ -85,7 +102,19 @@ def smart_search(query: str, scope: str = "auto") -> str:
     if not orch:
         return "Error: Search system not initialized."
     try:
-        return orch.search(query=query, scope=scope)
+        result = orch.search(query=query, scope=scope)
+        engine = get_strategy_engine()
+        is_empty = result.strip() == "No results found."
+        result_count = 0 if is_empty else result.count("**")
+        hint = engine.record_attempt(query, result_count)
+
+        if hint == "EXHAUSTED":
+            return f"{result}\n\n⚠️ All search strategies exhausted after {engine.total_attempts} attempts. Summarize what you found so far.\n\n{engine.summary()}"
+        elif hint and hint.startswith("ESCALATED"):
+            return f"{result}\n\n💡 Strategy escalated. Try a different query or scope."
+        elif is_empty and engine.total_attempts > 1:
+            return f"{result}\n\n💡 This is attempt #{engine.total_attempts}. Try rephrasing or changing scope."
+        return result
     except Exception as e:
         return f"Search error: {e}"
 
@@ -105,7 +134,15 @@ def find_symbol(name: str, namespace: str = "") -> str:
     if not orch:
         return "Error: Search system not initialized."
     try:
-        return orch.find_symbol(name=name, namespace=namespace)
+        result = orch.find_symbol(name=name, namespace=namespace)
+        engine = get_strategy_engine()
+        is_empty = result.strip() == "No results found."
+        result_count = 0 if is_empty else 1
+        engine.record_attempt(f"symbol:{name}", result_count)
+
+        if is_empty:
+            return f"Symbol '{name}' not found. Try smart_search with the symbol name instead."
+        return result
     except Exception as e:
         return f"Symbol lookup error: {e}"
 

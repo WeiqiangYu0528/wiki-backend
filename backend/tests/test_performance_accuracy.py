@@ -27,6 +27,7 @@ from search.reranker import JaccardReranker, tokenize
 from search.lexical import LexicalSearch
 from search.cache import MultiLevelCache
 from search.registry import RepoRegistry
+from search_tools import smart_search, find_symbol
 from context_engine.budget import TokenBudget, estimate_tokens
 from context_engine.compactor import ContextCompactor
 from context_engine.engine import ContextEngine
@@ -1135,3 +1136,138 @@ class TestAgentToolWiring:
         agent_source = pathlib.Path(__file__).parent.parent / "agent.py"
         content = agent_source.read_text()
         assert "recursion_limit=25" in content, "recursion_limit=25 not found in agent.py"
+
+
+class TestSearchToolLoopHints:
+    """Tests for loop-aware hint integration in search tools."""
+
+    def test_smart_search_records_attempt(self):
+        """smart_search records attempt in strategy engine."""
+        from unittest.mock import MagicMock
+
+        import search_tools
+        from search.strategy import SearchStrategyEngine
+
+        engine = SearchStrategyEngine()
+        search_tools._strategy_engine = engine
+
+        mock_orch = MagicMock()
+        mock_orch.search.return_value = "No results found."
+        search_tools.set_orchestrator(mock_orch)
+
+        try:
+            result = smart_search.invoke({"query": "NonExistentThing", "scope": "code"})
+            assert engine.total_attempts >= 1
+        finally:
+            search_tools._strategy_engine = None
+            search_tools.set_orchestrator(None)
+
+    def test_smart_search_exhausted_hint(self):
+        """smart_search appends exhaustion hint after many failures."""
+        from unittest.mock import MagicMock
+
+        import search_tools
+        from search.strategy import SearchStrategyEngine
+
+        engine = SearchStrategyEngine()
+        search_tools._strategy_engine = engine
+
+        mock_orch = MagicMock()
+        mock_orch.search.return_value = "No results found."
+        search_tools.set_orchestrator(mock_orch)
+
+        try:
+            # Exhaust all strategies (5 strategies * 3 attempts each = 15)
+            for i in range(14):
+                engine.record_attempt(f"q{i}", 0)
+
+            result = smart_search.invoke({"query": "final_query", "scope": "code"})
+            assert "exhausted" in result.lower() or "⚠️" in result
+        finally:
+            search_tools._strategy_engine = None
+            search_tools.set_orchestrator(None)
+
+    def test_find_symbol_records_attempt(self):
+        """find_symbol records attempt in strategy engine."""
+        from unittest.mock import MagicMock
+
+        import search_tools
+        from search.strategy import SearchStrategyEngine
+
+        engine = SearchStrategyEngine()
+        search_tools._strategy_engine = engine
+
+        mock_orch = MagicMock()
+        mock_orch.find_symbol.return_value = "No results found."
+        search_tools.set_orchestrator(mock_orch)
+
+        try:
+            result = find_symbol.invoke({"name": "NonExistent"})
+            assert engine.total_attempts >= 1
+            assert "not found" in result.lower()
+        finally:
+            search_tools._strategy_engine = None
+            search_tools.set_orchestrator(None)
+
+    def test_find_symbol_success_no_hint(self):
+        """find_symbol with results doesn't add failure hints."""
+        from unittest.mock import MagicMock
+
+        import search_tools
+        from search.strategy import SearchStrategyEngine
+
+        engine = SearchStrategyEngine()
+        search_tools._strategy_engine = engine
+
+        mock_orch = MagicMock()
+        mock_orch.find_symbol.return_value = "**SearchOrchestrator** in search/orchestrator.py:42\nclass SearchOrchestrator:"
+        search_tools.set_orchestrator(mock_orch)
+
+        try:
+            result = find_symbol.invoke({"name": "SearchOrchestrator"})
+            assert "SearchOrchestrator" in result
+            assert "not found" not in result.lower()
+            assert engine.total_attempts == 1
+        finally:
+            search_tools._strategy_engine = None
+            search_tools.set_orchestrator(None)
+
+    def test_reset_strategy_engine(self):
+        """reset_strategy_engine creates fresh engine."""
+        import search_tools
+        from search_tools import reset_strategy_engine, get_strategy_engine
+
+        engine1 = get_strategy_engine()
+        engine1.record_attempt("test", 0)
+        assert engine1.total_attempts == 1
+
+        reset_strategy_engine()
+        engine2 = get_strategy_engine()
+        assert engine2.total_attempts == 0
+        assert engine2 is not engine1
+
+        # Cleanup
+        search_tools._strategy_engine = None
+
+    def test_smart_search_repeat_hint(self):
+        """smart_search shows repeat hint on second empty result."""
+        from unittest.mock import MagicMock
+
+        import search_tools
+        from search.strategy import SearchStrategyEngine
+
+        engine = SearchStrategyEngine()
+        search_tools._strategy_engine = engine
+
+        mock_orch = MagicMock()
+        mock_orch.search.return_value = "No results found."
+        search_tools.set_orchestrator(mock_orch)
+
+        try:
+            # First attempt — record it manually, then do second via tool
+            engine.record_attempt("first_query", 0)
+            result = smart_search.invoke({"query": "second_query", "scope": "auto"})
+            assert "attempt #" in result.lower() or "💡" in result
+        finally:
+            search_tools._strategy_engine = None
+            search_tools.set_orchestrator(None)

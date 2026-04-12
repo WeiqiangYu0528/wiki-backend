@@ -20,7 +20,7 @@ from observability import (
     extract_usage_metadata,
 )
 
-from search_tools import smart_search, find_symbol, read_code_section
+from search_tools import smart_search, find_symbol, read_code_section, reset_strategy_engine
 
 warnings.filterwarnings("ignore", category=UserWarning, module="langgraph")
 from langgraph.prebuilt import create_react_agent  # noqa: E402
@@ -432,6 +432,7 @@ def run_agent(
         span.set_attribute("request.model", model_id)
         span.set_attribute("request.query", query[:200])
 
+        reset_strategy_engine()
         llm = get_chat_model(model_id)
         agent = create_react_agent(llm, tools=tools, recursion_limit=25)
 
@@ -544,6 +545,7 @@ async def run_agent_stream(
         root_span.set_attribute("request.model", model_id)
         root_span.set_attribute("request.query", query[:200])
 
+        reset_strategy_engine()
         llm = get_chat_model(model_id)
         agent = create_react_agent(llm, tools=tools, recursion_limit=25)
 
