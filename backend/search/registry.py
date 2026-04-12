@@ -105,7 +105,7 @@ class RepoRegistry:
         """
         if namespace:
             repo = self.get_by_namespace(namespace)
-            return ([repo], "high") if repo else (self.repos, "low")
+            return ([repo], "high") if repo else (self.repos[:3], "low")
 
         # High confidence: page URL matches a known repo
         if page_url:
@@ -129,7 +129,7 @@ class RepoRegistry:
         scores.sort(key=lambda x: x[0], reverse=True)
 
         # Medium confidence: at least one keyword matched
-        if scores[0][0] > 0:
+        if scores and scores[0][0] > 0:
             result = [repo for score, repo in scores if score > 0]
             return result[:3], "medium"
 

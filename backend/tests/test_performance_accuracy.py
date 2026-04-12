@@ -430,7 +430,7 @@ class TestRepoTargetingConfidence:
         from search.registry import repo_registry
         repos, confidence = repo_registry.target("anything", namespace="nonexistent")
         assert confidence == "low"
-        assert len(repos) == len(repo_registry.repos)
+        assert len(repos) <= 3
 
     def test_url_matching_deepagents(self):
         from search.registry import repo_registry
