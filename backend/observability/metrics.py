@@ -99,9 +99,9 @@ class AgentMetrics:
             description="Successful code search lookups",
         )
         self.code_search_latency = meter.create_histogram(
-            "agent_code_search_latency_ms",
+            "agent_code_search_duration_seconds",
             description="Latency for code search operations",
-            unit="ms",
+            unit="s",
         )
         self.recursion_depth = meter.create_histogram(
             "agent_recursion_depth",
