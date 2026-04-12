@@ -1,5 +1,6 @@
 """LangChain tool wrappers for the search service layer."""
 
+import contextvars
 import os
 import re
 import threading
@@ -13,20 +14,22 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _orchestrator = None
 _lock = threading.Lock()
 
-# Per-request strategy engine — reset by agent before each request
-_strategy_engine: SearchStrategyEngine | None = None
+# Per-request strategy engine — uses contextvars for thread/async safety
+_strategy_engine_var: contextvars.ContextVar[SearchStrategyEngine | None] = contextvars.ContextVar(
+    "_strategy_engine", default=None
+)
 
 
 def get_strategy_engine() -> SearchStrategyEngine:
-    global _strategy_engine
-    if _strategy_engine is None:
-        _strategy_engine = SearchStrategyEngine()
-    return _strategy_engine
+    engine = _strategy_engine_var.get()
+    if engine is None:
+        engine = SearchStrategyEngine()
+        _strategy_engine_var.set(engine)
+    return engine
 
 
 def reset_strategy_engine() -> None:
-    global _strategy_engine
-    _strategy_engine = SearchStrategyEngine()
+    _strategy_engine_var.set(SearchStrategyEngine())
 
 
 def get_orchestrator():
@@ -105,7 +108,7 @@ def smart_search(query: str, scope: str = "auto") -> str:
         result = orch.search(query=query, scope=scope)
         engine = get_strategy_engine()
         is_empty = result.strip() == "No results found."
-        result_count = 0 if is_empty else result.count("**")
+        result_count = 0 if is_empty else len(re.findall(r'^\*\*', result, re.MULTILINE))
         hint = engine.record_attempt(query, result_count)
 
         if hint == "EXHAUSTED":
@@ -138,9 +141,11 @@ def find_symbol(name: str, namespace: str = "") -> str:
         engine = get_strategy_engine()
         is_empty = result.strip() == "No results found."
         result_count = 0 if is_empty else 1
-        engine.record_attempt(f"symbol:{name}", result_count)
+        hint = engine.record_attempt(f"symbol:{name}", result_count)
 
         if is_empty:
+            if hint == "EXHAUSTED":
+                return f"Symbol '{name}' not found.\n\n⚠️ All search strategies exhausted after {engine.total_attempts} attempts. Summarize what you found so far.\n\n{engine.summary()}"
             return f"Symbol '{name}' not found. Try smart_search with the symbol name instead."
         return result
     except Exception as e:

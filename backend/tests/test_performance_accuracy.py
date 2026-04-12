@@ -1141,100 +1141,81 @@ class TestAgentToolWiring:
 class TestSearchToolLoopHints:
     """Tests for loop-aware hint integration in search tools."""
 
+    def setup_method(self):
+        from search_tools import reset_strategy_engine
+        reset_strategy_engine()
+
+    def teardown_method(self):
+        from search_tools import reset_strategy_engine
+        import search_tools
+        reset_strategy_engine()
+        search_tools.set_orchestrator(None)
+
     def test_smart_search_records_attempt(self):
         """smart_search records attempt in strategy engine."""
         from unittest.mock import MagicMock
-
         import search_tools
-        from search.strategy import SearchStrategyEngine
-
-        engine = SearchStrategyEngine()
-        search_tools._strategy_engine = engine
+        from search_tools import get_strategy_engine
 
         mock_orch = MagicMock()
         mock_orch.search.return_value = "No results found."
         search_tools.set_orchestrator(mock_orch)
 
-        try:
-            result = smart_search.invoke({"query": "NonExistentThing", "scope": "code"})
-            assert engine.total_attempts >= 1
-        finally:
-            search_tools._strategy_engine = None
-            search_tools.set_orchestrator(None)
+        result = smart_search.invoke({"query": "NonExistentThing", "scope": "code"})
+        engine = get_strategy_engine()
+        assert engine.total_attempts >= 1
 
     def test_smart_search_exhausted_hint(self):
         """smart_search appends exhaustion hint after many failures."""
         from unittest.mock import MagicMock
-
         import search_tools
-        from search.strategy import SearchStrategyEngine
-
-        engine = SearchStrategyEngine()
-        search_tools._strategy_engine = engine
+        from search_tools import get_strategy_engine
 
         mock_orch = MagicMock()
         mock_orch.search.return_value = "No results found."
         search_tools.set_orchestrator(mock_orch)
 
-        try:
-            # Exhaust all strategies (5 strategies * 3 attempts each = 15)
-            for i in range(14):
-                engine.record_attempt(f"q{i}", 0)
+        engine = get_strategy_engine()
+        # Exhaust all strategies (5 strategies * 3 attempts each = 15)
+        for i in range(14):
+            engine.record_attempt(f"q{i}", 0)
 
-            result = smart_search.invoke({"query": "final_query", "scope": "code"})
-            assert "exhausted" in result.lower() or "⚠️" in result
-        finally:
-            search_tools._strategy_engine = None
-            search_tools.set_orchestrator(None)
+        result = smart_search.invoke({"query": "final_query", "scope": "code"})
+        assert "exhausted" in result.lower() or "⚠️" in result
 
     def test_find_symbol_records_attempt(self):
         """find_symbol records attempt in strategy engine."""
         from unittest.mock import MagicMock
-
         import search_tools
-        from search.strategy import SearchStrategyEngine
-
-        engine = SearchStrategyEngine()
-        search_tools._strategy_engine = engine
+        from search_tools import get_strategy_engine
 
         mock_orch = MagicMock()
         mock_orch.find_symbol.return_value = "No results found."
         search_tools.set_orchestrator(mock_orch)
 
-        try:
-            result = find_symbol.invoke({"name": "NonExistent"})
-            assert engine.total_attempts >= 1
-            assert "not found" in result.lower()
-        finally:
-            search_tools._strategy_engine = None
-            search_tools.set_orchestrator(None)
+        result = find_symbol.invoke({"name": "NonExistent"})
+        engine = get_strategy_engine()
+        assert engine.total_attempts >= 1
+        assert "not found" in result.lower()
 
     def test_find_symbol_success_no_hint(self):
         """find_symbol with results doesn't add failure hints."""
         from unittest.mock import MagicMock
-
         import search_tools
-        from search.strategy import SearchStrategyEngine
-
-        engine = SearchStrategyEngine()
-        search_tools._strategy_engine = engine
+        from search_tools import get_strategy_engine
 
         mock_orch = MagicMock()
         mock_orch.find_symbol.return_value = "**SearchOrchestrator** in search/orchestrator.py:42\nclass SearchOrchestrator:"
         search_tools.set_orchestrator(mock_orch)
 
-        try:
-            result = find_symbol.invoke({"name": "SearchOrchestrator"})
-            assert "SearchOrchestrator" in result
-            assert "not found" not in result.lower()
-            assert engine.total_attempts == 1
-        finally:
-            search_tools._strategy_engine = None
-            search_tools.set_orchestrator(None)
+        result = find_symbol.invoke({"name": "SearchOrchestrator"})
+        assert "SearchOrchestrator" in result
+        assert "not found" not in result.lower()
+        engine = get_strategy_engine()
+        assert engine.total_attempts == 1
 
     def test_reset_strategy_engine(self):
         """reset_strategy_engine creates fresh engine."""
-        import search_tools
         from search_tools import reset_strategy_engine, get_strategy_engine
 
         engine1 = get_strategy_engine()
@@ -1246,31 +1227,57 @@ class TestSearchToolLoopHints:
         assert engine2.total_attempts == 0
         assert engine2 is not engine1
 
-        # Cleanup
-        search_tools._strategy_engine = None
-
     def test_smart_search_repeat_hint(self):
         """smart_search shows repeat hint on second empty result."""
         from unittest.mock import MagicMock
-
         import search_tools
-        from search.strategy import SearchStrategyEngine
-
-        engine = SearchStrategyEngine()
-        search_tools._strategy_engine = engine
+        from search_tools import get_strategy_engine
 
         mock_orch = MagicMock()
         mock_orch.search.return_value = "No results found."
         search_tools.set_orchestrator(mock_orch)
 
-        try:
-            # First attempt — record it manually, then do second via tool
-            engine.record_attempt("first_query", 0)
-            result = smart_search.invoke({"query": "second_query", "scope": "auto"})
-            assert "attempt #" in result.lower() or "💡" in result
-        finally:
-            search_tools._strategy_engine = None
-            search_tools.set_orchestrator(None)
+        engine = get_strategy_engine()
+        # First attempt — record it manually, then do second via tool
+        engine.record_attempt("first_query", 0)
+        result = smart_search.invoke({"query": "second_query", "scope": "auto"})
+        assert "attempt #" in result.lower() or "💡" in result
+
+    def test_find_symbol_exhausted_hint(self):
+        """find_symbol shows exhaustion hint when strategies exhausted."""
+        from unittest.mock import MagicMock
+        import search_tools
+        from search_tools import get_strategy_engine
+
+        mock_orch = MagicMock()
+        mock_orch.find_symbol.return_value = "No results found."
+        search_tools.set_orchestrator(mock_orch)
+
+        engine = get_strategy_engine()
+        # Exhaust all strategies
+        for i in range(14):
+            engine.record_attempt(f"q{i}", 0)
+
+        result = find_symbol.invoke({"name": "NonExistent"})
+        assert "exhausted" in result.lower() or "⚠️" in result
+
+    def test_smart_search_escalation_hint(self):
+        """smart_search shows escalation hint when strategy switches."""
+        from unittest.mock import MagicMock
+        import search_tools
+        from search_tools import get_strategy_engine
+
+        mock_orch = MagicMock()
+        mock_orch.search.return_value = "No results found."
+        search_tools.set_orchestrator(mock_orch)
+
+        engine = get_strategy_engine()
+        # 2 failures, then the 3rd via tool triggers escalation
+        engine.record_attempt("q1", 0)
+        engine.record_attempt("q2", 0)
+
+        result = smart_search.invoke({"query": "q3", "scope": "code"})
+        assert "escalated" in result.lower() or "💡" in result
 
 
 class TestObservabilityEnhancements:
