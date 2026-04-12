@@ -252,3 +252,21 @@ def reject_proposal(proposal_id: str, current_user: str = Depends(get_current_us
 
     proposal_store.update_status(proposal_id, ProposalStatus.REJECTED)
     return {"status": "rejected"}
+
+
+# --- TRACE ENDPOINTS ---
+
+
+@app.get("/api/traces")
+def list_traces(limit: int = 20, current_user: str = Depends(get_current_user)):
+    """List recent request traces."""
+    return trace_store.recent(limit=limit)
+
+
+@app.get("/api/traces/{request_id}")
+def get_trace(request_id: str, current_user: str = Depends(get_current_user)):
+    """Get a specific request trace by ID."""
+    rows = trace_store.query("SELECT * FROM request_traces WHERE id = ?", (request_id,))
+    if not rows:
+        raise HTTPException(status_code=404, detail="Trace not found")
+    return rows[0]

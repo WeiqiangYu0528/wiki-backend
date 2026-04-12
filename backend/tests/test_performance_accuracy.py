@@ -1271,3 +1271,72 @@ class TestSearchToolLoopHints:
         finally:
             search_tools._strategy_engine = None
             search_tools.set_orchestrator(None)
+
+
+class TestObservabilityEnhancements:
+    """Tests for enhanced observability metrics and trace store."""
+
+    def test_agent_metrics_has_new_counters(self):
+        """AgentMetrics has search strategy metrics."""
+        from observability.metrics import AgentMetrics
+        m = AgentMetrics()
+        assert hasattr(m, 'search_attempts_total')
+        assert hasattr(m, 'strategy_escalations_total')
+        assert hasattr(m, 'loops_detected_total')
+        assert hasattr(m, 'repo_confidence_total')
+        assert hasattr(m, 'code_search_success_total')
+        assert hasattr(m, 'code_search_latency')
+        assert hasattr(m, 'recursion_depth')
+
+    def test_trace_store_extended_schema(self, tmp_path):
+        """Trace store supports new columns."""
+        from observability.trace_store import RequestTraceStore
+        store = RequestTraceStore(db_path=str(tmp_path / "test_traces.db"))
+        store.write(
+            request_id="test-123",
+            model="qwen3.5",
+            query="test query",
+            status="success",
+            search_attempts=5,
+            search_strategy="lexical_code",
+            loop_detected=True,
+            strategies_exhausted=False,
+            repo_confidence="high",
+            repo_selected="deepagents",
+            recursion_depth=12,
+            tool_call_sequence='["smart_search","find_symbol"]',
+        )
+        rows = store.recent(limit=1)
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["search_attempts"] == 5
+        assert row["search_strategy"] == "lexical_code"
+        assert row["loop_detected"] == 1  # stored as int
+        assert row["repo_confidence"] == "high"
+        assert row["repo_selected"] == "deepagents"
+        assert row["recursion_depth"] == 12
+
+    def test_trace_store_backwards_compatible(self, tmp_path):
+        """Trace store write() works with only old parameters."""
+        from observability.trace_store import RequestTraceStore
+        store = RequestTraceStore(db_path=str(tmp_path / "test_traces2.db"))
+        store.write(
+            request_id="old-style",
+            model="gpt-4",
+            query="old query",
+            status="success",
+            total_tokens=100,
+        )
+        rows = store.recent(limit=1)
+        assert len(rows) == 1
+        assert rows[0]["search_attempts"] == 0  # default
+
+    def test_trace_store_query_by_id(self, tmp_path):
+        """Trace store can query by specific ID."""
+        from observability.trace_store import RequestTraceStore
+        store = RequestTraceStore(db_path=str(tmp_path / "test_traces3.db"))
+        store.write(request_id="abc-123", model="test", query="q", status="ok")
+        store.write(request_id="def-456", model="test", query="q2", status="ok")
+        rows = store.query("SELECT * FROM request_traces WHERE id = ?", ("abc-123",))
+        assert len(rows) == 1
+        assert rows[0]["id"] == "abc-123"

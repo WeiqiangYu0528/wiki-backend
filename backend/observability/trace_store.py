@@ -28,7 +28,15 @@ CREATE TABLE IF NOT EXISTS request_traces (
     duration_ms INTEGER DEFAULT 0,
     error_message TEXT DEFAULT '',
     tiers_used TEXT DEFAULT '',
-    tools_used TEXT DEFAULT ''
+    tools_used TEXT DEFAULT '',
+    search_attempts INTEGER DEFAULT 0,
+    search_strategy TEXT DEFAULT '',
+    loop_detected INTEGER DEFAULT 0,
+    strategies_exhausted INTEGER DEFAULT 0,
+    repo_confidence TEXT DEFAULT '',
+    repo_selected TEXT DEFAULT '',
+    recursion_depth INTEGER DEFAULT 0,
+    tool_call_sequence TEXT DEFAULT '[]'
 )
 """
 
@@ -75,6 +83,14 @@ class RequestTraceStore:
         error_message: str = "",
         tiers_used: str = "",
         tools_used: str = "",
+        search_attempts: int = 0,
+        search_strategy: str = "",
+        loop_detected: bool = False,
+        strategies_exhausted: bool = False,
+        repo_confidence: str = "",
+        repo_selected: str = "",
+        recursion_depth: int = 0,
+        tool_call_sequence: str = "[]",
     ) -> None:
         """Write a request trace summary row."""
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -86,14 +102,21 @@ class RequestTraceStore:
                     (id, timestamp, model, query, status, total_tokens, input_tokens,
                      output_tokens, llm_calls, tool_calls, search_calls, embedding_calls,
                      prompt_chars, retrieval_chars, citations_count, duration_ms,
-                     error_message, tiers_used, tools_used)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                     error_message, tiers_used, tools_used, search_attempts,
+                     search_strategy, loop_detected, strategies_exhausted,
+                     repo_confidence, repo_selected, recursion_depth,
+                     tool_call_sequence)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         request_id, timestamp, model, query[:200], status,
                         total_tokens, input_tokens, output_tokens,
                         llm_calls, tool_calls, search_calls, embedding_calls,
                         prompt_chars, retrieval_chars, citations_count, duration_ms,
                         error_message, tiers_used, tools_used,
+                        search_attempts, search_strategy, int(loop_detected),
+                        int(strategies_exhausted), repo_confidence, repo_selected,
+                        recursion_depth, tool_call_sequence,
                     ),
                 )
                 conn.commit()

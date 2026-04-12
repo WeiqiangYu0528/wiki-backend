@@ -76,3 +76,34 @@ class AgentMetrics:
             "agent_embedding_cache_size",
             description="Current embedding cache entries",
         )
+
+        # --- Search strategy metrics ---
+        self.search_attempts_total = meter.create_counter(
+            "agent_search_attempts_total",
+            description="Total search attempts by strategy",
+        )
+        self.strategy_escalations_total = meter.create_counter(
+            "agent_strategy_escalations_total",
+            description="Search strategy escalation events",
+        )
+        self.loops_detected_total = meter.create_counter(
+            "agent_loops_detected_total",
+            description="Loop detection events (recursion limit hit)",
+        )
+        self.repo_confidence_total = meter.create_counter(
+            "agent_repo_confidence_total",
+            description="Repo targeting confidence distribution",
+        )
+        self.code_search_success_total = meter.create_counter(
+            "agent_code_search_success_total",
+            description="Successful code search lookups",
+        )
+        self.code_search_latency = meter.create_histogram(
+            "agent_code_search_latency_ms",
+            description="Latency for code search operations",
+            unit="ms",
+        )
+        self.recursion_depth = meter.create_histogram(
+            "agent_recursion_depth",
+            description="How deep the ReAct loop goes per request",
+        )
