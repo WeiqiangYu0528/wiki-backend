@@ -44,10 +44,14 @@ context_engine = ContextEngine(
     budget=TokenBudget(context_limit=128000),
 )
 
-# Allow requests from configured origins
+# Allow requests from configured origins (wildcard in development)
+_origins = (
+    ["*"] if settings.environment == "development"
+    else [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,7 +94,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 class LoginRequest(BaseModel):
     username: str
     password: str
-    totp: str
+    totp: str = ""
 
 class ChatMessage(BaseModel):
     role: str
