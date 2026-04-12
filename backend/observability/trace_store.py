@@ -54,6 +54,23 @@ class RequestTraceStore:
             conn = sqlite3.connect(self._db_path)
             try:
                 conn.execute(CREATE_TABLE_SQL)
+                # Migrate existing tables: add columns that may be missing
+                for col, typedef in [
+                    ("tiers_used", "TEXT DEFAULT ''"),
+                    ("tools_used", "TEXT DEFAULT ''"),
+                    ("search_attempts", "INTEGER DEFAULT 0"),
+                    ("search_strategy", "TEXT DEFAULT ''"),
+                    ("loop_detected", "INTEGER DEFAULT 0"),
+                    ("strategies_exhausted", "INTEGER DEFAULT 0"),
+                    ("repo_confidence", "TEXT DEFAULT ''"),
+                    ("repo_selected", "TEXT DEFAULT ''"),
+                    ("recursion_depth", "INTEGER DEFAULT 0"),
+                    ("tool_call_sequence", "TEXT DEFAULT '[]'"),
+                ]:
+                    try:
+                        conn.execute(f"ALTER TABLE request_traces ADD COLUMN {col} {typedef}")
+                    except sqlite3.OperationalError:
+                        pass  # column already exists
                 conn.commit()
             finally:
                 conn.close()
@@ -127,12 +144,13 @@ class RequestTraceStore:
 
     def query(self, sql: str, params: tuple = ()) -> list[dict]:
         """Run a read query and return rows as dicts."""
-        conn = self._connect()
-        try:
-            cursor = conn.execute(sql, params)
-            return [dict(row) for row in cursor.fetchall()]
-        finally:
-            conn.close()
+        with self._lock:
+            conn = self._connect()
+            try:
+                cursor = conn.execute(sql, params)
+                return [dict(row) for row in cursor.fetchall()]
+            finally:
+                conn.close()
 
     def recent(self, limit: int = 20) -> list[dict]:
         """Return the most recent trace summaries."""

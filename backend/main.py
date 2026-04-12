@@ -260,6 +260,7 @@ def reject_proposal(proposal_id: str, current_user: str = Depends(get_current_us
 @app.get("/api/traces")
 def list_traces(limit: int = 20, current_user: str = Depends(get_current_user)):
     """List recent request traces."""
+    limit = min(max(limit, 1), 100)
     return trace_store.recent(limit=limit)
 
 
@@ -296,7 +297,7 @@ def _run_index_build():
             workspace_dir=workspace_dir,
             semantic=orch.semantic,
             registry=orch.registry,
-            meilisearch_client=orch._meili,
+            meilisearch_client=orch.meilisearch_client,
         )
         stats = builder.build()
         orch.mark_ready()

@@ -139,49 +139,6 @@ def read_source_file(namespace: str, file_path: str) -> str:
 
 
 @tool
-def search_knowledge_base(query: str, namespace: str = "") -> str:
-    """Searches the wiki documentation for a text query.
-
-    Args:
-        query: Text or keyword to search for.
-        namespace: Optional wiki namespace to scope the search. One of:
-            'claude-code', 'deepagents', 'opencode', 'openclaw', 'autogen', 'hermes-agent'.
-            Leave empty to search all namespaces.
-    """
-    try:
-        if namespace and namespace in WIKI_NAMESPACES:
-            search_dir = os.path.join(ROOT_DIR, WIKI_NAMESPACES[namespace])
-            path_prefix = WIKI_NAMESPACES[namespace] + "/"
-        else:
-            search_dir = DOCS_DIR
-            path_prefix = "docs/"
-
-        res = subprocess.run(
-            ["grep", "-r", "-i", "-n", "--include=*.md", query, "."],
-            cwd=search_dir,
-            capture_output=True,
-            text=True,
-        )
-        if res.returncode != 0:
-            return "No matches found."
-
-        lines = res.stdout.split("\n")
-        # Normalise paths so they are ROOT_DIR-relative (e.g. docs/claude-code/…)
-        normalised = []
-        for line in lines:
-            if line.startswith("./"):
-                line = path_prefix + line[2:]
-            normalised.append(line)
-
-        result = "\n".join(normalised[:50])
-        if len(normalised) > 50:
-            result += "\n... (truncated)"
-        return result
-    except Exception as e:
-        return f"Error searching: {e}"
-
-
-@tool
 def list_wiki_pages(namespace: str) -> str:
     """Lists all available wiki pages in a given namespace.
 
@@ -626,7 +583,7 @@ async def run_agent_stream(
                     active_tool_spans[run_id] = tool_span
                     tool_start_times[run_id] = time.time()
 
-                    if tool_name in ("search_knowledge_base", "smart_search", "find_symbol"):
+                    if tool_name in ("smart_search", "find_symbol"):
                         search_call_count += 1
 
                     yield {"type": "tool_call", "name": tool_name, "input": str(tool_input)[:200]}
@@ -665,13 +622,7 @@ async def run_agent_stream(
                             agent_metrics.tool_calls_total.add(1, {"tool_name": tool_name, "status": "success"})
                             agent_metrics.tool_call_duration.record(tool_duration, {"tool_name": tool_name})
 
-                    if tool_name == "search_knowledge_base" and isinstance(output, str):
-                        for line in output.splitlines():
-                            m = re.match(r"^(docs/[\w/\-]+\.md):", line)
-                            if m:
-                                cited_files.add(m.group(1))
-
-                    elif tool_name == "propose_doc_change" and isinstance(output, str):
+                    if tool_name == "propose_doc_change" and isinstance(output, str):
                         pid_match = re.search(r"Proposal ID: `(\w+)`", output)
                         if pid_match:
                             from proposals import proposal_store as _ps

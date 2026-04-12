@@ -94,14 +94,15 @@ SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = settings.jwt_algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt_access_token_expire_minutes
 
+import secrets as _secrets
+
 def verify_password(plain_password, stored_password):
-    # In a real app with multiple users, you'd use bcrypt hashing. 
-    # Since this is a local tool with a single admin controlled via .env, a direct string compare works for the MVP.
-    return plain_password == stored_password
+    # Timing-safe comparison to prevent timing attacks.
+    return _secrets.compare_digest(str(plain_password), str(stored_password))
 
 def verify_totp(secret: str, code: str) -> bool:
     if not secret:
-        # If no secret is configured, assume MFA is disabled (for dev fallback)
+        logger.warning("MFA secret not configured — TOTP verification is disabled")
         return True
     totp = pyotp.TOTP(secret)
     return totp.verify(code)

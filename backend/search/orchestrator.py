@@ -2,6 +2,7 @@
 
 import logging
 import re
+import threading
 import time
 from typing import Optional
 
@@ -131,17 +132,21 @@ class SearchOrchestrator:
         self._meili = meilisearch_client
         self._reranker = reranker
         self._cache = cache
-        self._ready = False
+        self._ready_event = threading.Event()
         self._max_results = max_results
         self._max_chars = max_chars
         self._result_max_chars = result_max_chars
 
     @property
     def is_ready(self) -> bool:
-        return self._ready
+        return self._ready_event.is_set()
 
     def mark_ready(self) -> None:
-        self._ready = True
+        self._ready_event.set()
+
+    @property
+    def meilisearch_client(self) -> "MeilisearchClient | None":
+        return self._meili
 
     def clear_cache(self) -> None:
         if self._cache:
@@ -212,7 +217,7 @@ class SearchOrchestrator:
                 sources_used.append("meilisearch")
 
             # ChromaDB semantic (for concept queries)
-            if self._ready and query_type == "concept":
+            if self.is_ready and query_type == "concept":
                 with tracer.start_as_current_span("search.semantic") as sem_span:
                     t0 = time.time()
                     semantic_results = self._semantic_search(query, scope, targets, max_results=10)
@@ -222,7 +227,7 @@ class SearchOrchestrator:
                 sources_used.append("semantic")
 
             # Symbol search (for symbol queries)
-            if self._ready and query_type == "symbol":
+            if self.is_ready and query_type == "symbol":
                 with tracer.start_as_current_span("search.symbol") as sym_span:
                     t0 = time.time()
                     symbol_results = self.semantic.query("symbols", effective_query, n_results=5)
@@ -267,7 +272,7 @@ class SearchOrchestrator:
 
     def find_symbol(self, name: str, namespace: str = "") -> str:
         """Find a symbol by name. Unchanged from v1."""
-        if not self._ready:
+        if not self.is_ready:
             return "Search index is still building. Please try again in a moment."
         where = {"file_path": {"$contains": namespace}} if namespace else None
         results = self.semantic.query("symbols", name, n_results=10, where=where)
