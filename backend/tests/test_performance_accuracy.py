@@ -1079,7 +1079,7 @@ class TestOrchestratorSymbolFallback:
         from search.orchestrator import SearchOrchestrator
         from search.semantic import SemanticSearch
         from search.reranker import JaccardReranker
-        from unittest.mock import MagicMock
+        from unittest.mock import MagicMock, patch
 
         semantic = SemanticSearch.__new__(SemanticSearch)
         semantic._ready = False
@@ -1096,6 +1096,11 @@ class TestOrchestratorSymbolFallback:
             result_max_chars=200,
         )
         orch._ready = False
-        result = orch.search("sessionHistory", scope="code")
+        with patch.object(orch.lexical, 'search', wraps=orch.lexical.search) as lexical_spy:
+            result = orch.search("sessionHistory", scope="code")
+            # Lexical should have been called
+            lexical_spy.assert_called_once()
+            # Meilisearch should also have been called (in addition, not instead)
+            mock_meili.search.assert_called()
         # Even with Meilisearch returning nothing, lexical should find results
         assert result != "No results found.", "Lexical should still find results alongside Meilisearch"

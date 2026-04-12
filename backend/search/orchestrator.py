@@ -203,7 +203,7 @@ class SearchOrchestrator:
                     t0 = time.time()
                     meili_results: list[dict] = []
                     if scope in ("auto", "wiki"):
-                        meili_results.extend(self._meili.search("wiki_docs", query, limit=15))
+                        meili_results.extend(self._meili.search("wiki_docs", search_query, limit=15))
                     if scope in ("auto", "code"):
                         meili_results.extend(self._meili.search("code_docs", search_query, limit=15))
                     ms_span.set_attribute("search.results_count", len(meili_results))
