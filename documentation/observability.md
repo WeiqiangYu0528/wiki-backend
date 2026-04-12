@@ -51,6 +51,8 @@ Extended schema in `backend/observability/trace_store.py` captures per-request s
 
 ## API Endpoints
 - `GET /api/traces?limit=20` — Recent request traces (requires auth)
+  - **limit** parameter is capped at 100 for performance (max 100 rows returned)
+  - Returns list of most recent trace summaries as JSON
 - `GET /api/traces/{request_id}` — Specific trace by ID (requires auth)
 
 ## Grafana Dashboards
@@ -277,25 +279,33 @@ analytics. Every request gets a row with 19 fields.
 
 ```sql
 CREATE TABLE IF NOT EXISTS request_traces (
-    id TEXT PRIMARY KEY,                -- UUID
-    timestamp REAL NOT NULL,            -- Unix timestamp
-    method TEXT NOT NULL,               -- HTTP method
-    path TEXT NOT NULL,                 -- URL path
-    status_code INTEGER,               -- HTTP response status
-    duration_ms REAL,                   -- Total request duration
-    model TEXT,                         -- LLM model used
-    query TEXT,                         -- User query text
-    scope TEXT,                         -- Wiki namespace
-    prompt_tokens INTEGER,              -- Total prompt tokens
-    completion_tokens INTEGER,          -- Total completion tokens
-    total_tokens INTEGER,              -- prompt + completion
-    tools_called TEXT,                  -- JSON array of tool names
-    tool_count INTEGER,                 -- Number of tool calls
-    search_results_count INTEGER,       -- Number of search results
-    cache_hit INTEGER,                  -- 1 if search cache hit, 0 if miss
-    error TEXT,                         -- Error message (if any)
-    agent_iterations INTEGER,           -- ReAct loop iterations
-    memory_items_recalled INTEGER       -- Memories injected
+    id TEXT PRIMARY KEY,                -- Request UUID
+    timestamp TEXT NOT NULL,            -- ISO 8601 timestamp (UTC)
+    model TEXT NOT NULL,                -- LLM model used
+    query TEXT NOT NULL,                -- User query text (truncated to 200 chars)
+    status TEXT NOT NULL,               -- Request status
+    total_tokens INTEGER DEFAULT 0,     -- Total tokens used
+    input_tokens INTEGER DEFAULT 0,     -- Prompt/input tokens
+    output_tokens INTEGER DEFAULT 0,    -- Completion/output tokens
+    llm_calls INTEGER DEFAULT 0,        -- Number of LLM API calls
+    tool_calls INTEGER DEFAULT 0,       -- Number of tool invocations
+    search_calls INTEGER DEFAULT 0,     -- Number of search API calls
+    embedding_calls INTEGER DEFAULT 0,  -- Number of embedding calls
+    prompt_chars INTEGER DEFAULT 0,     -- Characters in prompt context
+    retrieval_chars INTEGER DEFAULT 0,  -- Characters retrieved for context
+    citations_count INTEGER DEFAULT 0,  -- Number of citations
+    duration_ms INTEGER DEFAULT 0,      -- Total request duration (ms)
+    error_message TEXT DEFAULT '',      -- Error message (if any)
+    tiers_used TEXT DEFAULT '',         -- Tiers used during search (comma-separated)
+    tools_used TEXT DEFAULT '',         -- Tools used during request (comma-separated)
+    search_attempts INTEGER DEFAULT 0,  -- Number of search attempts made
+    search_strategy TEXT DEFAULT '',    -- Strategy used for search escalation
+    loop_detected INTEGER DEFAULT 0,    -- Whether infinite loop was detected (0/1)
+    strategies_exhausted INTEGER DEFAULT 0, -- Whether all strategies exhausted (0/1)
+    repo_confidence TEXT DEFAULT '',    -- Confidence for repo targeting
+    repo_selected TEXT DEFAULT '',      -- Selected repository name
+    recursion_depth INTEGER DEFAULT 0,  -- Max recursion depth reached
+    tool_call_sequence TEXT DEFAULT '[]' -- JSON array of tool call details
 );
 
 CREATE INDEX IF NOT EXISTS idx_request_traces_timestamp
@@ -305,29 +315,62 @@ CREATE INDEX IF NOT EXISTS idx_request_traces_model
 ON request_traces(model);
 ```
 
-### 19 Fields
+### 27 Fields
 
-| #  | Field                    | Type    | Description                                |
-|----|--------------------------|---------|--------------------------------------------|
-| 1  | `id`                     | TEXT    | UUID primary key                           |
-| 2  | `timestamp`              | REAL    | Unix timestamp of request start            |
-| 3  | `method`                 | TEXT    | HTTP method (GET, POST)                    |
-| 4  | `path`                   | TEXT    | Request path (/chat, /chat/stream)         |
-| 5  | `status_code`            | INTEGER | HTTP response status code                  |
-| 6  | `duration_ms`            | REAL    | Total request duration in milliseconds     |
-| 7  | `model`                  | TEXT    | LLM model used for this request            |
-| 8  | `query`                  | TEXT    | User's query text                          |
-| 9  | `scope`                  | TEXT    | Wiki namespace (from page_context)         |
-| 10 | `prompt_tokens`          | INTEGER | Total prompt tokens across all LLM calls   |
-| 11 | `completion_tokens`      | INTEGER | Total completion tokens                    |
-| 12 | `total_tokens`           | INTEGER | Sum of prompt + completion tokens          |
-| 13 | `tools_called`           | TEXT    | JSON array of tool names called            |
-| 14 | `tool_count`             | INTEGER | Number of tool invocations                 |
-| 15 | `search_results_count`   | INTEGER | Total search results returned              |
-| 16 | `cache_hit`              | INTEGER | Whether search cache was hit (0 or 1)      |
-| 17 | `error`                  | TEXT    | Error message if request failed            |
-| 18 | `agent_iterations`       | INTEGER | Number of ReAct loop iterations            |
-| 19 | `memory_items_recalled`  | INTEGER | Number of memory items injected            |
+| #  | Field                   | Type    | Description                                          |
+|----|-------------------------|---------|------------------------------------------------------|
+| 1  | `id`                    | TEXT    | Request UUID (primary key)                           |
+| 2  | `timestamp`             | TEXT    | ISO 8601 timestamp in UTC                            |
+| 3  | `model`                 | TEXT    | LLM model used (e.g., claude-3-5-sonnet-20241022)   |
+| 4  | `query`                 | TEXT    | User query (truncated to 200 characters)             |
+| 5  | `status`                | TEXT    | Request status (success, error, etc.)                |
+| 6  | `total_tokens`          | INTEGER | Total tokens used (input + output)                   |
+| 7  | `input_tokens`          | INTEGER | Prompt/input tokens                                  |
+| 8  | `output_tokens`         | INTEGER | Completion/output tokens                            |
+| 9  | `llm_calls`             | INTEGER | Number of LLM API calls made                         |
+| 10 | `tool_calls`            | INTEGER | Total number of tool invocations                     |
+| 11 | `search_calls`          | INTEGER | Number of search API calls                           |
+| 12 | `embedding_calls`       | INTEGER | Number of embedding API calls                        |
+| 13 | `prompt_chars`          | INTEGER | Characters in final prompt sent to LLM               |
+| 14 | `retrieval_chars`       | INTEGER | Characters of retrieved content used in prompt       |
+| 15 | `citations_count`       | INTEGER | Number of citations included in response             |
+| 16 | `duration_ms`           | INTEGER | Total request duration in milliseconds               |
+| 17 | `error_message`         | TEXT    | Error message if request failed (empty if success)   |
+| 18 | `tiers_used`            | TEXT    | Search tiers used (comma-separated: web, code, etc.) |
+| 19 | `tools_used`            | TEXT    | Tools invoked (comma-separated names)                |
+| 20 | `search_attempts`       | INTEGER | Total number of search attempts made                 |
+| 21 | `search_strategy`       | TEXT    | Search strategy used (web_only, code_first, etc.)   |
+| 22 | `loop_detected`         | INTEGER | Whether infinite loop was detected (0 or 1)          |
+| 23 | `strategies_exhausted`  | INTEGER | Whether all search strategies were exhausted (0 or 1)|
+| 24 | `repo_confidence`       | TEXT    | Confidence level for repository targeting            |
+| 25 | `repo_selected`         | TEXT    | Name of selected repository (if applicable)          |
+| 26 | `recursion_depth`       | INTEGER | Maximum recursion/loop depth reached                 |
+| 27 | `tool_call_sequence`    | TEXT    | JSON array of tool call details (name, duration)     |
+
+### Schema Migration
+
+On initialization, the trace store runs a schema migration that uses `ALTER TABLE` statements to add any missing columns from previous versions. This allows graceful upgrades without data loss:
+
+```python
+# From backend/observability/trace_store.py _init_db()
+for col, typedef in [
+    ("tiers_used", "TEXT DEFAULT ''"),
+    ("tools_used", "TEXT DEFAULT ''"),
+    ("search_attempts", "INTEGER DEFAULT 0"),
+    # ... (all new columns are added with ALTER TABLE if not present)
+]:
+    try:
+        conn.execute(f"ALTER TABLE request_traces ADD COLUMN {col} {typedef}")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+```
+
+### Thread Safety
+
+The `RequestTraceStore` class uses a thread lock (`threading.Lock`) to ensure thread-safe access to the SQLite database:
+- **write()** method locks during INSERT/REPLACE operations
+- **query()** method locks during SELECT operations
+- All database connections are created within the lock context to prevent race conditions
 
 ### Querying the Trace Store
 
