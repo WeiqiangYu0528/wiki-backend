@@ -489,6 +489,8 @@ def run_agent(
                     agent_metrics.tokens_total.add(usage["output_tokens"], {"model": model_id, "direction": "output"})
 
             if trace_store:
+                from search_tools import get_strategy_engine
+                strategy = get_strategy_engine()
                 trace_store.write(
                     request_id=request_id,
                     model=model_id,
@@ -499,6 +501,11 @@ def run_agent(
                     output_tokens=usage["output_tokens"],
                     prompt_chars=prompt_info["total_chars"],
                     duration_ms=duration_ms,
+                    search_attempts=strategy.total_attempts,
+                    search_strategy=strategy.current_strategy if not strategy.exhausted else "exhausted",
+                    loop_detected=False,
+                    strategies_exhausted=strategy.exhausted,
+                    recursion_depth=0,
                 )
 
             return reply
@@ -575,6 +582,7 @@ async def run_agent_stream(
         cited_files: set[str] = set()
         active_tool_spans: dict[str, trace.Span] = {}
         tool_start_times: dict[str, float] = {}
+        tool_call_sequence: list[dict] = []
         full_reply = ""
 
         try:
@@ -648,6 +656,11 @@ async def run_agent_stream(
                         tool_span.set_attribute("tool.output_size", output_size)
                         tool_span.set_attribute("tool.status", "success")
                         tool_span.end()
+                        tool_call_sequence.append({
+                            "name": tool_name,
+                            "duration_ms": int(tool_duration * 1000),
+                            "output_length": output_size,
+                        })
                         if agent_metrics:
                             agent_metrics.tool_calls_total.add(1, {"tool_name": tool_name, "status": "success"})
                             agent_metrics.tool_call_duration.record(tool_duration, {"tool_name": tool_name})
@@ -710,6 +723,8 @@ async def run_agent_stream(
                 agent_metrics.retrieval_chars_hist.record(retrieval_chars)
 
             if trace_store:
+                from search_tools import get_strategy_engine
+                strategy = get_strategy_engine()
                 trace_store.write(
                     request_id=request_id,
                     model=model_id,
@@ -726,6 +741,12 @@ async def run_agent_stream(
                     citations_count=len(cited_files),
                     duration_ms=duration_ms,
                     tools_used=",".join(tools_used),
+                    search_attempts=strategy.total_attempts,
+                    search_strategy=strategy.current_strategy if not strategy.exhausted else "exhausted",
+                    loop_detected=llm_call_count >= 20,
+                    strategies_exhausted=strategy.exhausted,
+                    recursion_depth=llm_call_count,
+                    tool_call_sequence=json.dumps(tool_call_sequence),
                 )
 
             if cited_files:
