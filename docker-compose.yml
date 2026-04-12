@@ -25,8 +25,8 @@ services:
       - OTEL_OTEL_ENDPOINT=http://otel-collector:4317
       - OTEL_ENABLED=true
       - MEILISEARCH_URL=http://meilisearch:7700
-      - ENVIRONMENT=development
-      - APP_MFA_SECRET=
+      # ENVIRONMENT and APP_MFA_SECRET should come from .env file
+      # In development, create .env with ENVIRONMENT=development
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

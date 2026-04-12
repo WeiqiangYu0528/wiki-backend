@@ -1,8 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 import pyotp
 from passlib.context import CryptContext
 from pydantic_settings import BaseSettings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     app_admin_username: str = "admin"
@@ -69,6 +72,23 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Production safety validation
+def validate_production_config():
+    """Raise RuntimeError if production env has insecure defaults."""
+    if settings.environment != "production":
+        return
+    errors = []
+    if settings.jwt_secret_key == "change-me-in-production":
+        errors.append("JWT_SECRET_KEY must be changed from default")
+    if not settings.app_mfa_secret:
+        errors.append("APP_MFA_SECRET must be set in production")
+    if settings.app_admin_password in ("password", "admin", ""):
+        errors.append("APP_ADMIN_PASSWORD must be non-default in production")
+    if errors:
+        raise RuntimeError(f"Production config errors: {'; '.join(errors)}")
+
+validate_production_config()
+
 # JWT Config
 SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = settings.jwt_algorithm
@@ -89,9 +109,9 @@ def verify_totp(secret: str, code: str) -> bool:
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

@@ -44,9 +44,11 @@ context_engine = ContextEngine(
     budget=TokenBudget(context_limit=128000),
 )
 
-# Allow requests from configured origins (wildcard in development)
+# CORS: explicit origins even in development (wildcard + credentials is insecure)
+_dev_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000", "http://127.0.0.1:8001"]
 _origins = (
-    ["*"] if settings.environment == "development"
+    _dev_origins + [o.strip() for o in settings.cors_origins.split(",") if o.strip() and o.strip() not in _dev_origins]
+    if settings.environment == "development"
     else [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 )
 app.add_middleware(
@@ -123,7 +125,7 @@ class ProposalResponse(BaseModel):
 @app.get("/health")
 def health_check():
     """Health check endpoint for service monitoring."""
-    return {"status": "ok", "environment": settings.environment}
+    return {"status": "ok"}
 
 
 @app.post("/login")
