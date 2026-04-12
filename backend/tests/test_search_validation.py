@@ -50,7 +50,7 @@ def _make_orchestrator(tmp_dir, cache=None, reranker=None):
     semantic_mock.query.return_value = []
 
     registry_mock = MagicMock()
-    registry_mock.target.return_value = []
+    registry_mock.target.return_value = ([], "low")
 
     from search.orchestrator import SearchOrchestrator
 

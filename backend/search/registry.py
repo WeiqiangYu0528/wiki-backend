@@ -98,19 +98,23 @@ class RepoRegistry:
         query: str,
         page_url: str = "",
         namespace: str = "",
-    ) -> list[RepoMeta]:
+    ) -> tuple[list["RepoMeta"], str]:
+        """Target repos for a query. Returns (repos, confidence).
+
+        confidence is one of: "high", "medium", "low".
+        """
         if namespace:
             repo = self.get_by_namespace(namespace)
-            return [repo] if repo else self.repos
+            return ([repo], "high") if repo else (self.repos, "low")
 
-        primary_from_url: RepoMeta | None = None
+        # High confidence: page URL matches a known repo
         if page_url:
             for repo in self.repos:
                 wiki_suffix = repo.wiki_dir.replace("docs/", "")
                 if wiki_suffix in page_url:
-                    primary_from_url = repo
-                    break
+                    return [repo], "high"
 
+        # Keyword scoring
         query_lower = query.lower()
         scores: list[tuple[float, RepoMeta]] = []
         for repo in self.repos:
@@ -124,20 +128,13 @@ class RepoRegistry:
 
         scores.sort(key=lambda x: x[0], reverse=True)
 
-        result: list[RepoMeta] = []
-        seen: set[str] = set()
+        # Medium confidence: at least one keyword matched
+        if scores[0][0] > 0:
+            result = [repo for score, repo in scores if score > 0]
+            return result[:3], "medium"
 
-        if primary_from_url:
-            result.append(primary_from_url)
-            seen.add(primary_from_url.namespace)
-
-        for score, repo in scores:
-            if repo.namespace not in seen:
-                if score > 0 or not result:
-                    result.append(repo)
-                    seen.add(repo.namespace)
-
-        return result if result else self.repos
+        # Low confidence: no keywords matched — return top 3
+        return [repo for _, repo in scores[:3]], "low"
 
 
 repo_registry = RepoRegistry()

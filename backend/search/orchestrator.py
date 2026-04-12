@@ -175,7 +175,9 @@ class SearchOrchestrator:
             span.set_attribute("search.cache_hit", False)
 
             namespace = scope if scope not in ("auto", "wiki", "code") else ""
-            targets = self.registry.target(query, page_url=page_url, namespace=namespace)
+            targets, repo_confidence = self.registry.target(query, page_url=page_url, namespace=namespace)
+            span.set_attribute("search.repo_confidence", repo_confidence)
+            span.set_attribute("search.repos_targeted", ",".join(t.namespace for t in targets))
             query_type, effective_query = classify_query(query)
             span.set_attribute("search.query_type", query_type)
             span.set_attribute("search.effective_query", effective_query[:200])

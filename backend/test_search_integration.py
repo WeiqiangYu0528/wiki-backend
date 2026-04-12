@@ -38,9 +38,10 @@ print("PASS")
 
 # --- Test 4: Registry targeting ---
 print("\n--- Test 4: Registry targeting ---")
-targets = repo_registry.target("tool permissions", page_url="/claude-code/entities/tool-system/")
+targets, confidence = repo_registry.target("tool permissions", page_url="/claude-code/entities/tool-system/")
 assert targets[0].namespace == "claude-code"
-print(f"PASS — targeted {targets[0].namespace}")
+assert confidence == "high"
+print(f"PASS — targeted {targets[0].namespace}, confidence: {confidence}")
 
 # --- Test 5: read_code_section ---
 print("\n--- Test 5: read_code_section ---")

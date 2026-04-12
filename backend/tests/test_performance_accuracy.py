@@ -374,7 +374,7 @@ class TestRepoTargetingAccuracy:
     def test_keyword_targeting(self, registry):
         correct = 0
         for query, expected_ns in self.TARGETING_CASES:
-            targets = registry.target(query)
+            targets, confidence = registry.target(query)
             top_ns = targets[0].namespace if targets else None
             if top_ns == expected_ns:
                 correct += 1
@@ -383,17 +383,60 @@ class TestRepoTargetingAccuracy:
 
     def test_namespace_direct_targeting(self, registry):
         for ns in ["claude-code", "deepagents", "opencode", "openclaw", "autogen", "hermes-agent"]:
-            targets = registry.target("any query", namespace=ns)
+            targets, confidence = registry.target("any query", namespace=ns)
             assert len(targets) == 1
             assert targets[0].namespace == ns
+            assert confidence == "high"
 
     def test_page_url_targeting(self, registry):
-        targets = registry.target("some query", page_url="/claude-code/entities/agent-system")
+        targets, confidence = registry.target("some query", page_url="/claude-code/entities/agent-system")
         assert targets[0].namespace == "claude-code"
+        assert confidence == "high"
 
     def test_ambiguous_query_returns_multiple(self, registry):
-        targets = registry.target("how does the system work")
+        targets, confidence = registry.target("how does the system work")
         assert len(targets) >= 1, "Ambiguous query should still return targets"
+        assert confidence == "low"
+
+
+class TestRepoTargetingConfidence:
+    """Test repo targeting returns confidence scores."""
+
+    def test_high_confidence_from_namespace(self):
+        from search.registry import repo_registry
+        repos, confidence = repo_registry.target("anything", namespace="claude-code")
+        assert confidence == "high"
+        assert repos[0].namespace == "claude-code"
+
+    def test_high_confidence_from_url(self):
+        from search.registry import repo_registry
+        repos, confidence = repo_registry.target("What is the tool system?", page_url="http://localhost/claude-code/entities/tool-system/")
+        assert confidence == "high"
+        assert repos[0].namespace == "claude-code"
+
+    def test_medium_confidence_from_keywords(self):
+        from search.registry import repo_registry
+        repos, confidence = repo_registry.target("How does the graph factory work?")
+        assert confidence == "medium"
+        assert repos[0].namespace == "deepagents"
+
+    def test_low_confidence_generic_query(self):
+        from search.registry import repo_registry
+        repos, confidence = repo_registry.target("How does error handling work?")
+        assert confidence == "low"
+        assert len(repos) <= 3
+
+    def test_namespace_not_found_returns_low(self):
+        from search.registry import repo_registry
+        repos, confidence = repo_registry.target("anything", namespace="nonexistent")
+        assert confidence == "low"
+        assert len(repos) == len(repo_registry.repos)
+
+    def test_url_matching_deepagents(self):
+        from search.registry import repo_registry
+        repos, confidence = repo_registry.target("test", page_url="http://localhost/deepagents-wiki/overview/")
+        assert confidence == "high"
+        assert repos[0].namespace == "deepagents"
 
 
 # ===========================================================================
