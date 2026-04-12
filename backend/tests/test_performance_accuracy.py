@@ -909,3 +909,51 @@ class TestCamelToSnake:
     def test_camel_to_snake(self, input_, expected):
         from search.lexical import LexicalSearch
         assert LexicalSearch._camel_to_snake(input_) == expected
+
+
+class TestSearchStrategyEngine:
+    """Test search strategy engine loop prevention."""
+
+    def test_initial_strategy(self):
+        from search.strategy import SearchStrategyEngine
+        engine = SearchStrategyEngine()
+        assert engine.current_strategy == "symbol_exact"
+        assert not engine.exhausted
+
+    def test_escalation_after_failures(self):
+        from search.strategy import SearchStrategyEngine
+        engine = SearchStrategyEngine()
+        # 3 failed attempts should escalate
+        for _ in range(3):
+            engine.record_attempt("test_query", result_count=0)
+        assert engine.current_strategy == "lexical_code"
+
+    def test_exhaustion(self):
+        from search.strategy import SearchStrategyEngine
+        engine = SearchStrategyEngine()
+        # Exhaust all strategies
+        for _ in range(15):  # 3 per strategy × 5 strategies
+            engine.record_attempt(f"q{_}", result_count=0)
+        assert engine.exhausted
+
+    def test_success_does_not_escalate(self):
+        from search.strategy import SearchStrategyEngine
+        engine = SearchStrategyEngine()
+        engine.record_attempt("test_query", result_count=5)
+        assert engine.current_strategy == "symbol_exact"  # No escalation
+
+    def test_get_hint_on_exhaustion(self):
+        from search.strategy import SearchStrategyEngine
+        engine = SearchStrategyEngine()
+        for _ in range(15):
+            hint = engine.record_attempt(f"q{_}", result_count=0)
+        assert hint == "EXHAUSTED"
+
+    def test_summary(self):
+        from search.strategy import SearchStrategyEngine
+        engine = SearchStrategyEngine()
+        engine.record_attempt("q1", result_count=0)
+        engine.record_attempt("q2", result_count=3)
+        summary = engine.summary()
+        assert "symbol_exact" in summary
+        assert "2" in summary  # 2 attempts
