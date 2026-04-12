@@ -11,10 +11,11 @@ import httpx
 from opentelemetry import trace
 
 from observability import get_tracer
+from search.embedding_cache import PersistentEmbeddingCache
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_DIMENSION = 384
+EMBEDDING_DIMENSION = 768
 BATCH_SIZE = 64
 
 
@@ -71,11 +72,12 @@ class OllamaEmbeddingFunction(chromadb.EmbeddingFunction[list[str]]):
     def __init__(
         self,
         base_url: str = "http://localhost:11434",
-        model: str = "all-minilm",
+        model: str = "nomic-embed-text",
+        cache_db_path: str = "data/embedding_cache.db",
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._model = model
-        self._cache = EmbeddingCache(max_size=128)
+        self._cache = PersistentEmbeddingCache(db_path=cache_db_path)
 
     def __call__(self, input: list[str]) -> list[list[float]]:
         if not input:
@@ -136,15 +138,11 @@ class OllamaEmbeddingFunction(chromadb.EmbeddingFunction[list[str]]):
             return [emb for _, emb in results]
 
     def clear_cache(self) -> None:
-        self._cache.clear()
+        pass  # PersistentEmbeddingCache has no clear — embeddings are permanent
 
     @property
     def cache_stats(self) -> dict[str, int]:
-        return {
-            "size": len(self._cache),
-            "hits": self._cache.hits,
-            "misses": self._cache.misses,
-        }
+        return self._cache.stats
 
 
 class SemanticSearch:
@@ -154,11 +152,12 @@ class SemanticSearch:
         self,
         persist_dir: str,
         ollama_base_url: str = "http://localhost:11434",
-        ollama_model: str = "all-minilm",
+        ollama_model: str = "nomic-embed-text",
+        cache_db_path: str = "data/embedding_cache.db",
     ) -> None:
         self._client = chromadb.PersistentClient(path=persist_dir)
         self._embed_fn = OllamaEmbeddingFunction(
-            base_url=ollama_base_url, model=ollama_model,
+            base_url=ollama_base_url, model=ollama_model, cache_db_path=cache_db_path,
         )
 
     @property

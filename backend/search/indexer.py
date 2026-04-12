@@ -11,6 +11,7 @@ import tempfile
 import time
 
 from search.chunker import chunk_markdown, chunk_source_file
+from search.meilisearch_client import MeilisearchClient
 from search.registry import RepoRegistry, repo_registry
 from search.semantic import SemanticSearch
 from search.symbols import SymbolExtractor
@@ -64,11 +65,13 @@ class IndexBuilder:
         workspace_dir: str,
         semantic: SemanticSearch,
         registry: RepoRegistry | None = None,
+        meilisearch_client: "MeilisearchClient | None" = None,
     ) -> None:
         self.workspace_dir = workspace_dir
         self.semantic = semantic
         self.registry = registry or repo_registry
         self._extractor = SymbolExtractor()
+        self._meili = meilisearch_client
         self._manifest_path = os.path.join(
             workspace_dir, "backend", "data", MANIFEST_FILE,
         )
@@ -172,6 +175,20 @@ class IndexBuilder:
         if all_chunks:
             self.semantic.add_documents("wiki_docs", all_chunks)
             self.stats["wiki_chunks"] = len(all_chunks)
+            if self._meili:
+                meili_docs = [
+                    {
+                        "id": c["id"],
+                        "content": c["text"],
+                        "file_path": c.get("file_path", ""),
+                        "section": c.get("section", ""),
+                        "heading": c.get("heading", ""),
+                        "type": "wiki",
+                    }
+                    for c in all_chunks
+                ]
+                self._meili.ensure_index("wiki_docs")
+                self._meili.index_documents("wiki_docs", meili_docs)
 
     def _index_source_code(self) -> None:
         """Index source code files: docstrings, code chunks, and symbols."""
@@ -232,6 +249,20 @@ class IndexBuilder:
         if code_chunks:
             self.semantic.add_documents("code_docs", code_chunks)
             self.stats["code_chunks"] = len(code_chunks)
+            if self._meili:
+                meili_docs = [
+                    {
+                        "id": c["id"],
+                        "content": c["text"],
+                        "file_path": c.get("file_path", ""),
+                        "symbol": c.get("symbol", ""),
+                        "kind": c.get("kind", ""),
+                        "type": "code",
+                    }
+                    for c in code_chunks
+                ]
+                self._meili.ensure_index("code_docs")
+                self._meili.index_documents("code_docs", meili_docs)
 
         if symbol_docs:
             self.semantic.add_documents("symbols", symbol_docs)

@@ -18,17 +18,41 @@ def get_orchestrator():
         if _orchestrator is None:
             from search.orchestrator import SearchOrchestrator
             from search.semantic import SemanticSearch
+            from search.meilisearch_client import MeilisearchClient
+            from search.reranker import JaccardReranker
+            from search.cache import MultiLevelCache
             from security import settings
 
             chroma_dir = os.path.join(os.path.dirname(__file__), "data", "chromadb")
+            cache_db = os.path.join(os.path.dirname(__file__), settings.cache_db_path)
+            embed_cache_db = os.path.join(os.path.dirname(__file__), "data", "embedding_cache.db")
+
             semantic = SemanticSearch(
                 persist_dir=chroma_dir,
                 ollama_base_url=settings.ollama_base_url,
                 ollama_model=settings.ollama_embed_model,
+                cache_db_path=embed_cache_db,
             )
+
+            meili = MeilisearchClient(
+                url=settings.meilisearch_url,
+                api_key=settings.meilisearch_api_key,
+            )
+
+            reranker = JaccardReranker()
+
+            cache = MultiLevelCache(
+                db_path=cache_db,
+                l1_max_entries=settings.cache_l1_max_entries,
+                l2_ttl_seconds=settings.cache_l2_ttl_seconds,
+            )
+
             _orchestrator = SearchOrchestrator(
                 workspace_dir=ROOT_DIR,
                 semantic=semantic,
+                meilisearch_client=meili,
+                reranker=reranker,
+                cache=cache,
                 max_results=settings.search_max_results,
                 max_chars=settings.search_max_chars,
                 result_max_chars=settings.search_result_max_chars,
