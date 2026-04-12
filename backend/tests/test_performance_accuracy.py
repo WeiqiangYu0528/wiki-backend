@@ -1049,3 +1049,53 @@ class TestSearchStrategyEngine:
         summary = engine.summary()
         assert "symbol_exact" in summary
         assert "2" in summary  # 2 attempts
+
+
+class TestOrchestratorSymbolFallback:
+    """Test that symbol queries fall back to lexical search."""
+
+    def test_symbol_query_uses_lexical_when_semantic_unavailable(self):
+        """When semantic is not ready, lexical search should still find results."""
+        from search.orchestrator import SearchOrchestrator
+        from search.semantic import SemanticSearch
+        from search.reranker import JaccardReranker
+
+        semantic = SemanticSearch.__new__(SemanticSearch)
+        semantic._ready = False
+        orch = SearchOrchestrator(
+            workspace_dir=ROOT_DIR,
+            semantic=semantic,
+            reranker=JaccardReranker(),
+            max_chars=2000,
+            result_max_chars=200,
+        )
+        orch._ready = False
+        result = orch.search("sessionHistory", scope="code")
+        assert result != "No results found.", "Should find sessionHistory via lexical"
+        assert "sessionhistory" in result.lower() or "session" in result.lower()
+
+    def test_lexical_always_runs(self):
+        """Lexical search should run even when Meilisearch is available."""
+        from search.orchestrator import SearchOrchestrator
+        from search.semantic import SemanticSearch
+        from search.reranker import JaccardReranker
+        from unittest.mock import MagicMock
+
+        semantic = SemanticSearch.__new__(SemanticSearch)
+        semantic._ready = False
+        mock_meili = MagicMock()
+        mock_meili.available = True
+        mock_meili.search.return_value = []
+
+        orch = SearchOrchestrator(
+            workspace_dir=ROOT_DIR,
+            semantic=semantic,
+            meilisearch_client=mock_meili,
+            reranker=JaccardReranker(),
+            max_chars=2000,
+            result_max_chars=200,
+        )
+        orch._ready = False
+        result = orch.search("sessionHistory", scope="code")
+        # Even with Meilisearch returning nothing, lexical should find results
+        assert result != "No results found.", "Lexical should still find results alongside Meilisearch"

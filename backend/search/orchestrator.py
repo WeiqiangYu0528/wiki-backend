@@ -187,27 +187,29 @@ class SearchOrchestrator:
             all_results: list[dict] = []
             sources_used: list[str] = []
 
-            # Meilisearch (BM25 + vector)
+            # --- Always run lexical search as baseline ---
+            with tracer.start_as_current_span("search.lexical") as lex_span:
+                t0 = time.time()
+                search_paths = self._get_search_paths(scope, targets)
+                lexical_results = self.lexical.search(search_query, search_paths=search_paths, max_results=max_results)
+                lex_span.set_attribute("search.results_count", len(lexical_results))
+                lex_span.set_attribute("search.duration_ms", int((time.time() - t0) * 1000))
+            all_results.extend(lexical_results)
+            sources_used.append("lexical")
+
+            # --- Meilisearch (BM25 + vector) when available ---
             if self._meili and self._meili.available:
                 with tracer.start_as_current_span("search.meilisearch") as ms_span:
                     t0 = time.time()
+                    meili_results: list[dict] = []
                     if scope in ("auto", "wiki"):
-                        all_results.extend(self._meili.search("wiki_docs", search_query, limit=15))
+                        meili_results.extend(self._meili.search("wiki_docs", query, limit=15))
                     if scope in ("auto", "code"):
-                        all_results.extend(self._meili.search("code_docs", search_query, limit=15))
-                    ms_span.set_attribute("search.results_count", len(all_results))
+                        meili_results.extend(self._meili.search("code_docs", search_query, limit=15))
+                    ms_span.set_attribute("search.results_count", len(meili_results))
                     ms_span.set_attribute("search.duration_ms", int((time.time() - t0) * 1000))
+                all_results.extend(meili_results)
                 sources_used.append("meilisearch")
-            else:
-                # Fallback to ripgrep lexical search
-                with tracer.start_as_current_span("search.lexical") as lex_span:
-                    t0 = time.time()
-                    search_paths = self._get_search_paths(scope, targets)
-                    lexical_results = self.lexical.search(search_query, search_paths=search_paths, max_results=max_results)
-                    lex_span.set_attribute("search.results_count", len(lexical_results))
-                    lex_span.set_attribute("search.duration_ms", int((time.time() - t0) * 1000))
-                all_results.extend(lexical_results)
-                sources_used.append("lexical")
 
             # ChromaDB semantic (for concept queries)
             if self._ready and query_type == "concept":
