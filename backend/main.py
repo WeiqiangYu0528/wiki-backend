@@ -270,3 +270,43 @@ def get_trace(request_id: str, current_user: str = Depends(get_current_user)):
     if not rows:
         raise HTTPException(status_code=404, detail="Trace not found")
     return rows[0]
+
+
+# --- STARTUP INDEX BUILD ---
+
+import threading
+import logging as _logging
+
+_index_logger = _logging.getLogger("indexer")
+
+
+def _run_index_build():
+    """Build search indexes in a background thread."""
+    try:
+        from search_tools import get_orchestrator
+        from search.indexer import IndexBuilder
+
+        orch = get_orchestrator()
+        if orch is None:
+            _index_logger.warning("Orchestrator not available, skipping index build")
+            return
+
+        workspace_dir = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), ".."))
+        builder = IndexBuilder(
+            workspace_dir=workspace_dir,
+            semantic=orch.semantic,
+            registry=orch.registry,
+            meilisearch_client=orch._meili,
+        )
+        stats = builder.build()
+        orch.mark_ready()
+        _index_logger.info("Index build complete: %s", stats)
+    except Exception as e:
+        _index_logger.error("Index build failed: %s", e)
+
+
+@app.on_event("startup")
+def startup_index():
+    """Trigger index build in background thread on startup."""
+    thread = threading.Thread(target=_run_index_build, daemon=True)
+    thread.start()
