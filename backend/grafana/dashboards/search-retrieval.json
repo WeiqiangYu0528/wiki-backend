@@ -1,54 +1,134 @@
 {
-  "dashboard": {
-    "id": null,
-    "uid": "search-retrieval",
-    "title": "Search & Retrieval",
-    "tags": ["agent", "search"],
-    "timezone": "browser",
-    "refresh": "30s",
-    "panels": [
-      {
-        "id": 1,
-        "title": "Search Tier Usage",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-        "targets": [{"expr": "sum(agent_search_calls_total) by (tier)", "legendFormat": "{{tier}}"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "fieldConfig": {"defaults": {"custom": {"stacking": {"mode": "normal"}}}}
+  "id": null,
+  "uid": "search-retrieval",
+  "title": "Search & Retrieval",
+  "tags": [
+    "agent",
+    "search"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Search Tier Usage",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
       },
-      {
-        "id": 2,
-        "title": "Embedding Cache Hit Ratio",
-        "type": "gauge",
-        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
-        "targets": [{"expr": "sum(agent_embedding_calls_total{cache_hit=\"true\"}) / sum(agent_embedding_calls_total) * 100", "legendFormat": "hit %"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "fieldConfig": {"defaults": {"min": 0, "max": 100, "unit": "percent"}}
+      "targets": [
+        {
+          "expr": "sum(agent_search_calls_total) by (tier)",
+          "legendFormat": "{{tier}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
       },
-      {
-        "id": 3,
-        "title": "Avg Search Results",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
-        "targets": [{"expr": "avg(agent_search_results_count_sum / agent_search_results_count_count)", "legendFormat": "avg results"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
-      },
-      {
-        "id": 4,
-        "title": "Retrieval Context Size (chars)",
-        "type": "heatmap",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-        "targets": [{"expr": "sum(rate(agent_retrieval_chars_bucket[5m])) by (le)", "format": "heatmap"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
-      },
-      {
-        "id": 5,
-        "title": "Tool Call Frequency",
-        "type": "bargauge",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-        "targets": [{"expr": "sum(agent_tool_calls_total) by (tool_name)", "legendFormat": "{{tool_name}}"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        }
       }
-    ]
-  }
+    },
+    {
+      "id": 2,
+      "title": "Embedding Cache Hit Ratio",
+      "type": "gauge",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(agent_embedding_calls_total{cache_hit=\"true\"}) / sum(agent_embedding_calls_total) * 100",
+          "legendFormat": "hit %"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Avg Search Results",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "avg(agent_search_results_count_sum / agent_search_results_count_count)",
+          "legendFormat": "avg results"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Retrieval Context Size (chars)",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(agent_retrieval_chars_bucket[5m])) by (le)",
+          "format": "heatmap"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Tool Call Frequency",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(agent_tool_calls_total) by (tool_name)",
+          "legendFormat": "{{tool_name}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    }
+  ]
 }

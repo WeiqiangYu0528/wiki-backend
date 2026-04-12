@@ -1,63 +1,143 @@
 {
-  "dashboard": {
-    "id": null,
-    "uid": "agent-overview",
-    "title": "Agent Overview",
-    "tags": ["agent", "observability"],
-    "timezone": "browser",
-    "refresh": "30s",
-    "panels": [
-      {
-        "id": 1,
-        "title": "Requests / Hour",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-        "targets": [{"expr": "sum(rate(agent_requests_total[1h]))", "legendFormat": "requests/hr"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
+  "id": null,
+  "uid": "agent-overview",
+  "title": "Agent Overview",
+  "tags": [
+    "agent",
+    "observability"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Requests / Hour",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
       },
-      {
-        "id": 2,
-        "title": "Median Latency (s)",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-        "targets": [{"expr": "histogram_quantile(0.5, sum(rate(agent_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
-      },
-      {
-        "id": 3,
-        "title": "P95 Latency (s)",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-        "targets": [{"expr": "histogram_quantile(0.95, sum(rate(agent_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
-      },
-      {
-        "id": 4,
-        "title": "Tokens / Hour",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-        "targets": [
-          {"expr": "sum(rate(agent_tokens_total{direction=\"input\"}[1h]))", "legendFormat": "input"},
-          {"expr": "sum(rate(agent_tokens_total{direction=\"output\"}[1h]))", "legendFormat": "output"}
-        ],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
-      },
-      {
-        "id": 5,
-        "title": "Error Rate / Hour",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
-        "targets": [{"expr": "sum(rate(agent_errors_total[1h])) by (stage)", "legendFormat": "{{stage}}"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
-      },
-      {
-        "id": 6,
-        "title": "Model Usage",
-        "type": "piechart",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
-        "targets": [{"expr": "sum(agent_requests_total) by (model)", "legendFormat": "{{model}}"}],
-        "datasource": {"type": "prometheus", "uid": "prometheus"}
+      "targets": [
+        {
+          "expr": "sum(rate(agent_requests_total[1h]))",
+          "legendFormat": "requests/hr"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
       }
-    ]
-  }
+    },
+    {
+      "id": 2,
+      "title": "Median Latency (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(agent_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "id": 3,
+      "title": "P95 Latency (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(agent_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Tokens / Hour",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(agent_tokens_total{direction=\"input\"}[1h]))",
+          "legendFormat": "input"
+        },
+        {
+          "expr": "sum(rate(agent_tokens_total{direction=\"output\"}[1h]))",
+          "legendFormat": "output"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Error Rate / Hour",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(agent_errors_total[1h])) by (stage)",
+          "legendFormat": "{{stage}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Model Usage",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum(agent_requests_total) by (model)",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
+    }
+  ]
 }

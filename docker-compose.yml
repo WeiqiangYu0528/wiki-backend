@@ -18,10 +18,20 @@ services:
       - ./claude_code:/workspace/claude_code
     environment:
       - PUBLISH_REPO_DIR=/publish-repo
+      - OLLAMA_BASE_URL=http://ollama:11434
       - OTEL_OTEL_ENDPOINT=http://otel-collector:4317
       - OTEL_ENABLED=true
     depends_on:
       - otel-collector
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
     restart: unless-stopped
 
   otel-collector:
@@ -72,3 +82,6 @@ services:
       - prometheus
       - jaeger
     restart: unless-stopped
+
+volumes:
+  ollama_data:
