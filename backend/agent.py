@@ -392,6 +392,7 @@ def run_agent(
     page_context: Optional[dict] = None,
     agent_metrics: Optional[AgentMetrics] = None,
     trace_store: Optional[RequestTraceStore] = None,
+    context_engine: Optional["ContextEngine"] = None,
 ) -> str:
     """Blocking agent execution (kept for backward compatibility with /chat endpoint)."""
     tracer = get_tracer()
@@ -408,11 +409,22 @@ def run_agent(
 
         system_prompt = build_system_prompt(page_context)
         history = _format_history(chat_history)
-        messages = [("system", system_prompt)]
-        messages.extend(history)
-        messages.append(("user", query))
 
-        prompt_info = _measure_prompt(system_prompt, history, query)
+        if context_engine:
+            assembled = context_engine.assemble(
+                system_prompt=system_prompt,
+                messages=[{"role": r, "content": c} for r, c in history],
+                query=query,
+            )
+            messages = [(m["role"], m["content"]) for m in assembled["messages"]]
+            prompt_info = _measure_prompt(system_prompt, history, query)
+            prompt_info["total_chars"] = assembled["total_tokens"] * 4
+        else:
+            messages = [("system", system_prompt)]
+            messages.extend(history)
+            messages.append(("user", query))
+            prompt_info = _measure_prompt(system_prompt, history, query)
+
         span.set_attribute("prompt.total_chars", prompt_info["total_chars"])
         span.set_attribute("prompt.history_turns", prompt_info["history_turns"])
         span.set_attribute("prompt.system_prompt_chars", prompt_info["system_prompt_chars"])
@@ -481,6 +493,7 @@ async def run_agent_stream(
     page_context: Optional[dict] = None,
     agent_metrics: Optional[AgentMetrics] = None,
     trace_store: Optional[RequestTraceStore] = None,
+    context_engine: Optional["ContextEngine"] = None,
 ) -> AsyncGenerator[dict, None]:
     """Streaming agent execution with full observability."""
     tracer = get_tracer()
@@ -506,11 +519,22 @@ async def run_agent_stream(
 
         system_prompt = build_system_prompt(page_context)
         history = _format_history(chat_history)
-        messages = [("system", system_prompt)]
-        messages.extend(history)
-        messages.append(("user", query))
 
-        prompt_info = _measure_prompt(system_prompt, history, query)
+        if context_engine:
+            assembled = context_engine.assemble(
+                system_prompt=system_prompt,
+                messages=[{"role": r, "content": c} for r, c in history],
+                query=query,
+            )
+            messages = [(m["role"], m["content"]) for m in assembled["messages"]]
+            prompt_info = _measure_prompt(system_prompt, history, query)
+            prompt_info["total_chars"] = assembled["total_tokens"] * 4
+        else:
+            messages = [("system", system_prompt)]
+            messages.extend(history)
+            messages.append(("user", query))
+            prompt_info = _measure_prompt(system_prompt, history, query)
+
         root_span.set_attribute("prompt.total_chars", prompt_info["total_chars"])
         root_span.set_attribute("prompt.history_turns", prompt_info["history_turns"])
         root_span.set_attribute("prompt.system_prompt_chars", prompt_info["system_prompt_chars"])

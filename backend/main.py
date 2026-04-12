@@ -29,6 +29,21 @@ agent_metrics = AgentMetrics()
 trace_store = RequestTraceStore(db_path=obs_config.sqlite_path)
 FastAPIInstrumentor.instrument_app(app)
 
+import os as _os
+from context_engine import ContextEngine, TokenBudget, ContextCompactor
+from memory import SQLiteMemory
+
+memory_store = SQLiteMemory(
+    db_path=_os.path.join(_os.path.dirname(__file__), "data", "memory.db"),
+    max_items=1000,
+)
+compactor = ContextCompactor(protected_turns=4, trigger_pct=0.5)
+context_engine = ContextEngine(
+    memory=memory_store,
+    compactor=compactor,
+    budget=TokenBudget(context_limit=128000),
+)
+
 # Allow requests from the local mkdocs frontend (or github pages if deployed)
 app.add_middleware(
     CORSMiddleware,
@@ -124,6 +139,7 @@ def chat_endpoint(request: ChatRequest, current_user: str = Depends(get_current_
             page_context=request.page_context,
             agent_metrics=agent_metrics,
             trace_store=trace_store,
+            context_engine=context_engine,
         )
         return {"reply": reply}
     except Exception as e:
@@ -150,6 +166,7 @@ async def chat_stream_endpoint(request: ChatRequest, current_user: str = Depends
                 page_context=request.page_context,
                 agent_metrics=agent_metrics,
                 trace_store=trace_store,
+                context_engine=context_engine,
             ):
                 yield json.dumps(event) + "\n"
         except Exception as e:

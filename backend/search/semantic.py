@@ -153,10 +153,11 @@ class SemanticSearch:
         persist_dir: str,
         ollama_base_url: str = "http://localhost:11434",
         ollama_model: str = "nomic-embed-text",
+        cache_db_path: str = "data/embedding_cache.db",
     ) -> None:
         self._client = chromadb.PersistentClient(path=persist_dir)
         self._embed_fn = OllamaEmbeddingFunction(
-            base_url=ollama_base_url, model=ollama_model,
+            base_url=ollama_base_url, model=ollama_model, cache_db_path=cache_db_path,
         )
 
     @property
