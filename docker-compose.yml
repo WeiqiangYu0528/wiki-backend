@@ -16,6 +16,7 @@ services:
       - ./openclaw:/workspace/openclaw
       - ./hermes-agent:/workspace/hermes-agent
       - ./claude_code:/workspace/claude_code
+      - backend_data:/workspace/backend/data
     environment:
       - PUBLISH_REPO_DIR=/publish-repo
       - OLLAMA_BASE_URL=http://ollama:11434
@@ -72,7 +73,7 @@ services:
       - ./backend/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./backend/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3000:3000"
+      - "19999:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -85,3 +86,4 @@ services:
 
 volumes:
   ollama_data:
+  backend_data:
