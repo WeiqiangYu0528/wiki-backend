@@ -44,10 +44,10 @@ context_engine = ContextEngine(
     budget=TokenBudget(context_limit=128000),
 )
 
-# Allow requests from the local mkdocs frontend (or github pages if deployed)
+# Allow requests from configured origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, lock this down!
+    allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -99,7 +99,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     query: str
     history: List[ChatMessage] = []
-    model: str = "openai"  # "openai", "deepseek", "qwen"
+    model: str = "openai"  # "openai", "deepseek", "qwen", "ollama"
     page_context: Optional[dict] = None  # {"title": "...", "url": "..."}
 
 
@@ -115,6 +115,12 @@ class ProposalResponse(BaseModel):
     commit_message: str
     files: list[ProposalFileResponse]
     result: Optional[dict] = None
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for service monitoring."""
+    return {"status": "ok", "environment": settings.environment}
+
 
 @app.post("/login")
 def login(request: LoginRequest):

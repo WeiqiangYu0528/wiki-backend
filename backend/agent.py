@@ -280,7 +280,16 @@ tools = [read_workspace_file, read_source_file, search_knowledge_base, list_wiki
 
 # --- MODEL ROUTING ---
 
-def get_chat_model(model_id: Literal["deepseek", "qwen", "openai"]) -> ChatOpenAI:
+def get_chat_model(model_id: Literal["deepseek", "qwen", "openai", "ollama"]) -> ChatOpenAI:
+    if model_id == "ollama":
+        from security import settings as _settings
+        chat_url = _settings.ollama_chat_url or _settings.ollama_base_url
+        return ChatOpenAI(
+            model=_settings.ollama_chat_model,
+            api_key="ollama",
+            base_url=f"{chat_url}/v1",
+            max_tokens=2000,
+        )
     if model_id == "deepseek":
         return ChatOpenAI(
             model="deepseek-chat",

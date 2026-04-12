@@ -20,9 +20,13 @@ services:
     environment:
       - PUBLISH_REPO_DIR=/publish-repo
       - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_CHAT_URL=http://host.docker.internal:11434
+      - OLLAMA_CHAT_MODEL=qwen3.5
       - OTEL_OTEL_ENDPOINT=http://otel-collector:4317
       - OTEL_ENABLED=true
       - MEILISEARCH_URL=http://meilisearch:7700
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - otel-collector
       - ollama
@@ -36,6 +40,22 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        until ollama list; do
+          echo 'Waiting for Ollama to be ready...';
+          sleep 2;
+        done;
+        ollama pull nomic-embed-text
+      "
+    depends_on:
+      - ollama
 
   meilisearch:
     image: getmeili/meilisearch:v1.12

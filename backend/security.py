@@ -20,8 +20,16 @@ class Settings(BaseSettings):
     # Ollama / Embeddings
     ollama_base_url: str = "http://localhost:11434"
     ollama_embed_model: str = "nomic-embed-text"
+    ollama_chat_model: str = "qwen3.5"
+    ollama_chat_url: str = ""  # If empty, uses ollama_base_url
     embedding_dimensions: int = 768
     embedding_provider: str = "ollama"
+
+    # CORS
+    cors_origins: str = "http://localhost:8000,http://localhost:8001"
+
+    # Environment mode
+    environment: str = "development"
 
     # Search
     search_max_results: int = 8
