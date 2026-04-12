@@ -892,3 +892,20 @@ class TestLexicalDefinitionBoost:
         # Should find classify_query in orchestrator.py
         paths = [r["file_path"] for r in results]
         assert any("orchestrator" in p for p in paths), f"Should find orchestrator.py, got: {paths}"
+
+
+class TestCamelToSnake:
+    """Test camelCase to snake_case conversion."""
+
+    @pytest.mark.parametrize("input_,expected", [
+        ("classifyQuery", "classify_query"),
+        ("SearchOrchestrator", "search_orchestrator"),
+        ("HTMLParser", "html_parser"),
+        ("getHTTPResponse", "get_http_response"),
+        ("already_snake", "already_snake"),
+        ("simple", "simple"),
+        ("", ""),
+    ])
+    def test_camel_to_snake(self, input_, expected):
+        from search.lexical import LexicalSearch
+        assert LexicalSearch._camel_to_snake(input_) == expected

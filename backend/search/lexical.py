@@ -12,7 +12,7 @@ class LexicalSearch:
 
     _DEFINITION_PATTERN = re.compile(
         r"^\s*(?:export\s+)?(?:async\s+)?(?:pub(?:lic)?\s+)?(?:static\s+)?(?:abstract\s+)?"
-        r"(?:def|class|function|interface|type|enum|struct|trait|impl)\s+",
+        r"(?:def|fn|func|class|function|interface|type|enum|struct|trait|impl)\s+",
         re.IGNORECASE,
     )
 
@@ -21,6 +21,14 @@ class LexicalSearch:
         """Convert camelCase to snake_case for query expansion."""
         s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    def _build_pattern(self, query: str) -> str:
+        """Build regex pattern with camelCase→snake_case expansion."""
+        escaped = re.escape(query)
+        snake = self._camel_to_snake(query)
+        if snake != query.lower():
+            return f"({escaped}|{re.escape(snake)})"
+        return escaped
 
     def __init__(self, workspace_dir: str) -> None:
         self.workspace_dir = workspace_dir
@@ -65,6 +73,8 @@ class LexicalSearch:
         file_glob: str,
         context_lines: int,
     ) -> list[dict]:
+        if not query.strip():
+            return []
         cmd = [
             "rg", "--json",
             "--ignore-case",
@@ -75,14 +85,7 @@ class LexicalSearch:
         if file_glob:
             cmd.extend(["--glob", file_glob])
 
-        escaped = re.escape(query)
-        snake = self._camel_to_snake(query)
-        if snake != query.lower():
-            pattern = f"({escaped}|{re.escape(snake)})"
-        else:
-            pattern = escaped
-
-        cmd.append(pattern)
+        cmd.append(self._build_pattern(query))
         cmd.extend(paths)
 
         try:
@@ -133,18 +136,13 @@ class LexicalSearch:
         file_glob: str,
         context_lines: int,
     ) -> list[dict]:
+        if not query.strip():
+            return []
         cmd = ["grep", "-r", "-E", "-i", "-n", f"-C{context_lines}"]
         if file_glob:
             cmd.extend(["--include", file_glob])
 
-        escaped = re.escape(query)
-        snake = self._camel_to_snake(query)
-        if snake != query.lower():
-            pattern = f"({escaped}|{re.escape(snake)})"
-        else:
-            pattern = escaped
-
-        cmd.append(pattern)
+        cmd.append(self._build_pattern(query))
         cmd.extend(paths)
 
         try:
@@ -181,18 +179,22 @@ class LexicalSearch:
     def _score_match(file_path: str, query: str, text: str) -> float:
         score = 1.0
         query_lower = query.lower()
+        snake = LexicalSearch._camel_to_snake(query)
+        match_terms = {query_lower}
+        if snake != query_lower:
+            match_terms.add(snake)
         basename = os.path.basename(file_path).lower()
 
         # Filename contains query → strong signal
-        if query_lower.replace(" ", "-") in basename or query_lower.replace(" ", "_") in basename:
+        if any(t.replace(" ", "-") in basename or t.replace(" ", "_") in basename for t in match_terms):
             score += 5.0
 
-        # Exact text match
-        if query in text:
+        # Exact text match (original or snake_case variant)
+        if query in text or (snake != query.lower() and snake in text):
             score += 2.0
 
-        # Definition line boost: +3.0 for def/class/function/interface lines containing the query
-        if LexicalSearch._DEFINITION_PATTERN.match(text) and query_lower in text.lower():
+        # Definition line boost
+        if LexicalSearch._DEFINITION_PATTERN.match(text) and any(t in text.lower() for t in match_terms):
             score += 3.0
 
         # Source code boost (not docs) for code-like queries
