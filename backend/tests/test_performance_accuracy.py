@@ -1104,3 +1104,34 @@ class TestOrchestratorSymbolFallback:
             mock_meili.search.assert_called()
         # Even with Meilisearch returning nothing, lexical should find results
         assert result != "No results found.", "Lexical should still find results alongside Meilisearch"
+
+
+class TestAgentToolWiring:
+    """Test that the agent has all search tools available."""
+
+    def test_smart_search_in_tools(self):
+        from agent import tools
+        tool_names = [t.name for t in tools]
+        assert "smart_search" in tool_names, f"smart_search missing from agent tools: {tool_names}"
+
+    def test_find_symbol_in_tools(self):
+        from agent import tools
+        tool_names = [t.name for t in tools]
+        assert "find_symbol" in tool_names, f"find_symbol missing from agent tools: {tool_names}"
+
+    def test_read_code_section_in_tools(self):
+        from agent import tools
+        tool_names = [t.name for t in tools]
+        assert "read_code_section" in tool_names, f"read_code_section missing from agent tools: {tool_names}"
+
+    def test_search_knowledge_base_removed(self):
+        from agent import tools
+        tool_names = [t.name for t in tools]
+        assert "search_knowledge_base" not in tool_names, f"search_knowledge_base should be removed: {tool_names}"
+
+    def test_recursion_limit_exists_in_source(self):
+        """Verify recursion_limit=25 appears in agent.py source code."""
+        import pathlib
+        agent_source = pathlib.Path(__file__).parent.parent / "agent.py"
+        content = agent_source.read_text()
+        assert "recursion_limit=25" in content, "recursion_limit=25 not found in agent.py"

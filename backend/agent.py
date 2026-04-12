@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import subprocess
@@ -18,6 +19,8 @@ from observability import (
     estimate_tokens,
     extract_usage_metadata,
 )
+
+from search_tools import smart_search, find_symbol, read_code_section
 
 warnings.filterwarnings("ignore", category=UserWarning, module="langgraph")
 from langgraph.prebuilt import create_react_agent  # noqa: E402
@@ -276,7 +279,15 @@ def propose_doc_change(changes: str) -> str:
     return "\n".join(response_parts)
 
 
-tools = [read_workspace_file, read_source_file, search_knowledge_base, list_wiki_pages, propose_doc_change]
+tools = [
+    smart_search,
+    find_symbol,
+    read_code_section,
+    read_workspace_file,
+    read_source_file,
+    list_wiki_pages,
+    propose_doc_change,
+]
 
 # --- MODEL ROUTING ---
 
@@ -341,11 +352,19 @@ may cite `libs/deepagents/deepagents/middleware/memory.py` — the actual file i
 When answering:
 1. Use the available tools to look up relevant wiki pages before answering.
 2. Prefer `list_wiki_pages` to discover pages, then `read_workspace_file` to read them.
-3. Use `search_knowledge_base` when looking for a specific term or concept across all pages.
+3. Use `smart_search` when looking for a specific term or concept across all pages.
 4. When you need to read actual source code referenced in a wiki page, use `read_source_file` with the
    appropriate namespace and the repo-relative path shown in the wiki page.
 5. Provide clear, accurate answers grounded in the documentation.
 6. End your response with a "**Sources:**" section listing each relative file path you read (e.g. `docs/claude-code/entities/tool-system.md`).
+
+Code search strategy:
+1. When asked about a specific function, class, or symbol, use `find_symbol` first.
+2. If `find_symbol` returns no results, use `smart_search` with scope="code".
+3. If you still can't find it, try `smart_search` with a broader scope="auto".
+4. Once you find the file, use `read_code_section` to read just that symbol — do NOT read the entire file.
+5. Do NOT retry the same search more than twice with the same query. Rephrase or use a different tool.
+6. If you cannot find the code after 3 different search attempts, explain what you searched for and that it was not found.
 
 Documentation updates:
 - You operate in READ-ONLY mode by default. You CANNOT write files or run git commands directly.
@@ -414,7 +433,7 @@ def run_agent(
         span.set_attribute("request.query", query[:200])
 
         llm = get_chat_model(model_id)
-        agent = create_react_agent(llm, tools=tools)
+        agent = create_react_agent(llm, tools=tools, recursion_limit=25)
 
         system_prompt = build_system_prompt(page_context)
         history = _format_history(chat_history)
@@ -437,10 +456,12 @@ def run_agent(
         span.set_attribute("prompt.total_chars", prompt_info["total_chars"])
         span.set_attribute("prompt.history_turns", prompt_info["history_turns"])
         span.set_attribute("prompt.system_prompt_chars", prompt_info["system_prompt_chars"])
+        span.set_attribute("llm.messages", json.dumps(messages, ensure_ascii=False))
 
         try:
             response = agent.invoke({"messages": messages})
             reply = response["messages"][-1].content
+            span.set_attribute("llm.response", str(reply))
             duration_ms = int((time.time() - start_time) * 1000)
 
             # Extract token usage from ALL AI messages (multi-turn ReAct loop)
@@ -524,7 +545,7 @@ async def run_agent_stream(
         root_span.set_attribute("request.query", query[:200])
 
         llm = get_chat_model(model_id)
-        agent = create_react_agent(llm, tools=tools)
+        agent = create_react_agent(llm, tools=tools, recursion_limit=25)
 
         system_prompt = build_system_prompt(page_context)
         history = _format_history(chat_history)
@@ -547,10 +568,12 @@ async def run_agent_stream(
         root_span.set_attribute("prompt.total_chars", prompt_info["total_chars"])
         root_span.set_attribute("prompt.history_turns", prompt_info["history_turns"])
         root_span.set_attribute("prompt.system_prompt_chars", prompt_info["system_prompt_chars"])
+        root_span.set_attribute("llm.messages", json.dumps(messages, ensure_ascii=False))
 
         cited_files: set[str] = set()
         active_tool_spans: dict[str, trace.Span] = {}
         tool_start_times: dict[str, float] = {}
+        full_reply = ""
 
         try:
             async for event in agent.astream_events({"messages": messages}, version="v2"):
@@ -560,6 +583,7 @@ async def run_agent_stream(
                     chunk = event["data"]["chunk"]
                     content = chunk.content if hasattr(chunk, "content") else ""
                     if isinstance(content, str) and content:
+                        full_reply += content
                         yield {"type": "token", "content": content}
 
                     # Check for usage metadata on stream end
@@ -653,6 +677,8 @@ async def run_agent_stream(
             # --- Request complete: record summary ---
             duration_ms = int((time.time() - start_time) * 1000)
             total_tokens = total_input_tokens + total_output_tokens
+
+            root_span.set_attribute("llm.response", full_reply)
 
             # If no usage metadata was available, estimate from prompt size
             estimated = total_tokens == 0
