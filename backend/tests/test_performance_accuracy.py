@@ -852,3 +852,43 @@ class TestEmbeddingCacheCorrectness:
         cache.get("m", "b")     # miss
         assert cache._hits == 1
         assert cache._misses == 1
+
+
+# ---------------------------------------------------------------------------
+# Lexical search: definition boost, source code boost, camelCase expansion
+# ---------------------------------------------------------------------------
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+
+class TestLexicalDefinitionBoost:
+    """Test that lexical search boosts code definition lines."""
+
+    def test_definition_line_scores_higher(self):
+        """A line containing 'def classify_query' should score higher than a comment mentioning it."""
+        from search.lexical import LexicalSearch
+        ls = LexicalSearch(ROOT_DIR)
+        definition_line = "def classify_query(query: str) -> str:"
+        comment_line = "# classify_query handles query classification"
+        def_score = ls._score_match("backend/search/orchestrator.py", "classify_query", definition_line)
+        comment_score = ls._score_match("backend/search/orchestrator.py", "classify_query", comment_line)
+        assert def_score > comment_score, f"Definition score {def_score} should exceed comment score {comment_score}"
+
+    def test_source_code_scores_higher_than_docs(self):
+        """Source code files should score at least as high as docs files for code queries."""
+        from search.lexical import LexicalSearch
+        ls = LexicalSearch(ROOT_DIR)
+        text = "def SearchOrchestrator():"
+        code_score = ls._score_match("backend/search/orchestrator.py", "SearchOrchestrator", text)
+        docs_score = ls._score_match("docs/claude-code/entities/tool-system.md", "SearchOrchestrator", text)
+        assert code_score >= docs_score, f"Code score {code_score} should be >= docs score {docs_score}"
+
+    def test_camelcase_to_snake_expansion(self):
+        """Lexical search should find snake_case variants of camelCase queries."""
+        from search.lexical import LexicalSearch
+        ls = LexicalSearch(ROOT_DIR)
+        # Search for a camelCase identifier — the search should internally try snake_case too
+        results = ls.search("classifyQuery", search_paths=["backend/search"], max_results=5)
+        # Should find classify_query in orchestrator.py
+        paths = [r["file_path"] for r in results]
+        assert any("orchestrator" in p for p in paths), f"Should find orchestrator.py, got: {paths}"

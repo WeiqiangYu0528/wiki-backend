@@ -2,12 +2,25 @@
 
 import json
 import os
+import re
 import subprocess
 from typing import Optional
 
 
 class LexicalSearch:
     """Fast text search using ripgrep with structured output and ranking."""
+
+    _DEFINITION_PATTERN = re.compile(
+        r"^\s*(?:export\s+)?(?:async\s+)?(?:pub(?:lic)?\s+)?(?:static\s+)?(?:abstract\s+)?"
+        r"(?:def|class|function|interface|type|enum|struct|trait|impl)\s+",
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _camel_to_snake(name: str) -> str:
+        """Convert camelCase to snake_case for query expansion."""
+        s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
     def __init__(self, workspace_dir: str) -> None:
         self.workspace_dir = workspace_dir
@@ -54,7 +67,6 @@ class LexicalSearch:
     ) -> list[dict]:
         cmd = [
             "rg", "--json",
-            "--fixed-strings",
             "--ignore-case",
             "--max-count", "5",
             f"--context={context_lines}",
@@ -63,7 +75,14 @@ class LexicalSearch:
         if file_glob:
             cmd.extend(["--glob", file_glob])
 
-        cmd.append(query)
+        escaped = re.escape(query)
+        snake = self._camel_to_snake(query)
+        if snake != query.lower():
+            pattern = f"({escaped}|{re.escape(snake)})"
+        else:
+            pattern = escaped
+
+        cmd.append(pattern)
         cmd.extend(paths)
 
         try:
@@ -114,10 +133,18 @@ class LexicalSearch:
         file_glob: str,
         context_lines: int,
     ) -> list[dict]:
-        cmd = ["grep", "-r", "-F", "-i", "-n", f"-C{context_lines}"]
+        cmd = ["grep", "-r", "-E", "-i", "-n", f"-C{context_lines}"]
         if file_glob:
             cmd.extend(["--include", file_glob])
-        cmd.append(query)
+
+        escaped = re.escape(query)
+        snake = self._camel_to_snake(query)
+        if snake != query.lower():
+            pattern = f"({escaped}|{re.escape(snake)})"
+        else:
+            pattern = escaped
+
+        cmd.append(pattern)
         cmd.extend(paths)
 
         try:
@@ -156,13 +183,20 @@ class LexicalSearch:
         query_lower = query.lower()
         basename = os.path.basename(file_path).lower()
 
+        # Filename contains query → strong signal
         if query_lower.replace(" ", "-") in basename or query_lower.replace(" ", "_") in basename:
             score += 5.0
 
+        # Exact text match
         if query in text:
             score += 2.0
 
-        if file_path.startswith("docs/"):
-            score += 1.0
+        # Definition line boost: +3.0 for def/class/function/interface lines containing the query
+        if LexicalSearch._DEFINITION_PATTERN.match(text) and query_lower in text.lower():
+            score += 3.0
+
+        # Source code boost (not docs) for code-like queries
+        if not file_path.startswith("docs/"):
+            score += 0.5
 
         return score
