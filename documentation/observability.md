@@ -1,8 +1,73 @@
-# Observability
+# Observability & Tracing
 
-The backend is instrumented with OpenTelemetry (OTEL) for distributed tracing
-and metrics. All telemetry flows through an OTEL Collector, which exports
-traces to Jaeger and metrics to Prometheus. Grafana provides dashboards on top
+## Architecture
+The system uses OpenTelemetry for distributed tracing, Prometheus for metrics, and a SQLite trace store for request-level summaries.
+
+```
+Agent Request → OTEL Spans → Jaeger (traces)
+                           → Prometheus (metrics)
+             → SQLite trace_store (summaries)
+             → /api/traces (API access)
+```
+
+## Metrics (OTEL/Prometheus)
+All metrics use the `agent_` prefix and are defined in `backend/observability/metrics.py`.
+
+### Counters
+| Metric | Description |
+|--------|-------------|
+| `agent_requests_total` | Total agent requests by model/status |
+| `agent_llm_calls_total` | LLM invocations by model/iteration |
+| `agent_tool_calls_total` | Tool calls by name/status |
+| `agent_search_calls_total` | Search calls by tier |
+| `agent_embedding_calls_total` | Embedding API calls |
+| `agent_tokens_total` | Tokens consumed by model/direction |
+| `agent_errors_total` | Errors by stage/type |
+| `agent_search_attempts_total` | Search attempts by strategy |
+| `agent_strategy_escalations_total` | Strategy escalation events |
+| `agent_loops_detected_total` | Loop detection events |
+| `agent_repo_confidence_total` | Repo targeting confidence distribution |
+| `agent_code_search_success_total` | Successful code search lookups |
+
+### Histograms
+| Metric | Description | Unit |
+|--------|-------------|------|
+| `agent_request_duration_seconds` | End-to-end request latency | s |
+| `agent_llm_call_duration_seconds` | Per-LLM-call latency | s |
+| `agent_tool_call_duration_seconds` | Per-tool-call latency | s |
+| `agent_prompt_tokens` | Prompt size in estimated tokens | tokens |
+| `agent_search_results_count` | Search results returned | count |
+| `agent_retrieval_chars` | Retrieved content chars in prompt | chars |
+| `agent_code_search_duration_seconds` | Code search latency | s |
+| `agent_recursion_depth` | ReAct loop depth per request | count |
+
+## Trace Store (SQLite)
+Extended schema in `backend/observability/trace_store.py` captures per-request summaries:
+- Token usage (total, input, output)
+- Tool calls (count, sequence with name/duration/output_length)
+- Search behavior (attempts, strategy, exhaustion, loop detection)
+- Repo targeting (confidence, selected repo)
+- Timing (duration_ms)
+
+## API Endpoints
+- `GET /api/traces?limit=20` — Recent request traces (requires auth)
+- `GET /api/traces/{request_id}` — Specific trace by ID (requires auth)
+
+## Grafana Dashboards
+Pre-configured dashboards available at `http://localhost:19999`:
+- Agent Overview: request rate, latency, error rate
+- Token Usage: consumption by model, input vs output
+- Search Performance: attempts, strategy distribution, success rate
+
+## Local Development
+```bash
+# Start observability stack
+docker compose up -d jaeger prometheus grafana
+
+# View traces: http://localhost:16686 (Jaeger)
+# View metrics: http://localhost:9090 (Prometheus)  
+# View dashboards: http://localhost:19999 (Grafana)
+```
 of Prometheus.
 
 ---

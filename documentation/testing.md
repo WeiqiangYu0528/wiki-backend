@@ -1,7 +1,60 @@
 # Testing Guide
 
-This document describes the test strategy, how to run tests, test categories,
-key fixtures, and how to add new tests.
+## Test Suite Overview
+| File | Tests | Purpose |
+|------|-------|---------|
+| `tests/test_performance_accuracy.py` | ~120 | Unit tests for all components |
+| `tests/test_code_location.py` | 12 | Code-location accuracy tests |
+| `tests/test_search_validation.py` | varies | Search edge cases |
+
+## Running Tests
+```bash
+cd backend
+
+# All unit tests
+python -m pytest tests/test_performance_accuracy.py -v
+
+# Code-location accuracy tests
+python -m pytest tests/test_code_location.py -v
+
+# All tests
+python -m pytest tests/ -v --tb=short
+```
+
+## Test Categories
+
+### Code-Location Accuracy Tests
+12 tests verifying the search system can locate code symbols:
+1. Exact function lookup (classify_query)
+2. Class lookup (SearchOrchestrator)
+3. CamelCase symbol search (JaccardReranker)
+4. Snake_case function lookup (format_results)
+5. Cross-file navigation (callers of classify_query)
+6. Cross-module search (LexicalSearch)
+7. Repo targeting from page URL
+8. Ambiguous symbol handling
+9. Missing symbol graceful failure
+10. Strategy escalation
+11. Definition vs usage ranking
+12. Loop prevention verification
+
+### Component Tests
+- Query classification and symbol extraction
+- Repo targeting confidence scoring
+- Orchestrator search with lexical fallback
+- Agent tool wiring verification
+- Lexical search definition boost
+- CamelCase to snake_case expansion
+- Search strategy engine escalation
+- Loop-aware hints in search tools
+- Observability metrics and trace store
+
+## Adding New Tests
+1. Add to `tests/test_performance_accuracy.py` for unit tests
+2. Add to `tests/test_code_location.py` for accuracy tests
+3. Use `_get_orchestrator()` helper for search tests
+4. Use `pytest.skip()` when services are unavailable
+5. All tests must work with local Ollama (no paid APIs)
 
 ---
 
