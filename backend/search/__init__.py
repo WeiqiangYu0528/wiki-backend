@@ -14,6 +14,9 @@ def __getattr__(name: str):
         "SemanticSearch": ("search.semantic", "SemanticSearch"),
         "LexicalSearch": ("search.lexical", "LexicalSearch"),
         "SymbolExtractor": ("search.symbols", "SymbolExtractor"),
+        "JaccardReranker": ("search.reranker", "JaccardReranker"),
+        "MeilisearchClient": ("search.meilisearch_client", "MeilisearchClient"),
+        "PersistentEmbeddingCache": ("search.cache", "PersistentEmbeddingCache"),
     }
     if name in _lazy:
         import importlib
@@ -35,4 +38,7 @@ __all__ = [
     "RepoMeta",
     "format_results",
     "classify_query",
+    "JaccardReranker",
+    "MeilisearchClient",
+    "PersistentEmbeddingCache",
 ]
