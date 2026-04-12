@@ -178,6 +178,9 @@ class SearchOrchestrator:
             targets = self.registry.target(query, page_url=page_url, namespace=namespace)
             query_type, effective_query = classify_query(query)
             span.set_attribute("search.query_type", query_type)
+            span.set_attribute("search.effective_query", effective_query[:200])
+            # Use extracted symbol for lexical/meilisearch when query is symbol type
+            search_query = effective_query if query_type == "symbol" else query
 
             all_results: list[dict] = []
             sources_used: list[str] = []
@@ -187,9 +190,9 @@ class SearchOrchestrator:
                 with tracer.start_as_current_span("search.meilisearch") as ms_span:
                     t0 = time.time()
                     if scope in ("auto", "wiki"):
-                        all_results.extend(self._meili.search("wiki_docs", query, limit=15))
+                        all_results.extend(self._meili.search("wiki_docs", search_query, limit=15))
                     if scope in ("auto", "code"):
-                        all_results.extend(self._meili.search("code_docs", query, limit=15))
+                        all_results.extend(self._meili.search("code_docs", search_query, limit=15))
                     ms_span.set_attribute("search.results_count", len(all_results))
                     ms_span.set_attribute("search.duration_ms", int((time.time() - t0) * 1000))
                 sources_used.append("meilisearch")
@@ -198,7 +201,7 @@ class SearchOrchestrator:
                 with tracer.start_as_current_span("search.lexical") as lex_span:
                     t0 = time.time()
                     search_paths = self._get_search_paths(scope, targets)
-                    lexical_results = self.lexical.search(query, search_paths=search_paths, max_results=max_results)
+                    lexical_results = self.lexical.search(search_query, search_paths=search_paths, max_results=max_results)
                     lex_span.set_attribute("search.results_count", len(lexical_results))
                     lex_span.set_attribute("search.duration_ms", int((time.time() - t0) * 1000))
                 all_results.extend(lexical_results)
