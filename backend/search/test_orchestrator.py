@@ -5,11 +5,11 @@ from search.orchestrator import SearchOrchestrator, classify_query, format_resul
 
 # --- Test 1: classify_query ---
 print("=== TEST 1: classify_query ===")
-assert classify_query("MemoryMiddleware") == "symbol"
-assert classify_query("how does the tool system work") == "concept"
-assert classify_query("ERROR: file not found") == "exact"
-assert classify_query("create_react_agent function") == "symbol"
-assert classify_query("what is the architecture of the agent loop") == "concept"
+assert classify_query("MemoryMiddleware") == ("symbol", "MemoryMiddleware")
+assert classify_query("how does the tool system work") == ("concept", "how does the tool system work")
+assert classify_query("ERROR: file not found") == ("exact", "ERROR: file not found")
+assert classify_query("create_react_agent function") == ("symbol", "create_react_agent")
+assert classify_query("what is the architecture of the agent loop") == ("concept", "what is the architecture of the agent loop")
 print("PASS")
 
 # --- Test 2: orchestrator init ---

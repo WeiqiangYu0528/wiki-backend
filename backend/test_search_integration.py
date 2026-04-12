@@ -31,9 +31,9 @@ print(f"PASS — {len(results)} results")
 
 # --- Test 3: Query classification ---
 print("\n--- Test 3: Query classification ---")
-assert classify_query("MemoryMiddleware") == "symbol"
-assert classify_query("how does routing work") == "concept"
-assert classify_query("ERROR: connection refused") == "exact"
+assert classify_query("MemoryMiddleware") == ("symbol", "MemoryMiddleware")
+assert classify_query("how does routing work") == ("concept", "how does routing work")
+assert classify_query("ERROR: connection refused") == ("exact", "ERROR: connection refused")
 print("PASS")
 
 # --- Test 4: Registry targeting ---

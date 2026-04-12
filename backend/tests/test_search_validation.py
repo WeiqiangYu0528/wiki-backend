@@ -71,32 +71,32 @@ def _make_orchestrator(tmp_dir, cache=None, reranker=None):
 
 class TestClassifyQuery:
     def test_classify_query_symbol_camelcase(self):
-        assert classify_query("MemoryMiddleware") == "symbol"
-        assert classify_query("SearchOrchestrator") == "symbol"
-        assert classify_query("MyClass") == "symbol"
+        assert classify_query("MemoryMiddleware")[0] == "symbol"
+        assert classify_query("SearchOrchestrator")[0] == "symbol"
+        assert classify_query("MyClass")[0] == "symbol"
 
     def test_classify_query_symbol_snake_case(self):
-        assert classify_query("my_function") == "symbol"
-        assert classify_query("get_search_results") == "symbol"
+        assert classify_query("my_function")[0] == "symbol"
+        assert classify_query("get_search_results")[0] == "symbol"
 
     def test_classify_query_symbol_dotted(self):
-        assert classify_query("module.method") == "symbol"
+        assert classify_query("module.method")[0] == "symbol"
 
     def test_classify_query_concept(self):
-        assert classify_query("how does caching work") == "concept"
-        assert classify_query("parallel search pipeline") == "concept"
+        assert classify_query("how does caching work")[0] == "concept"
+        assert classify_query("parallel search pipeline")[0] == "concept"
 
     def test_classify_query_exact_quoted(self):
-        assert classify_query('"exact phrase"') == "exact"
-        assert classify_query("some 'quoted' text") == "exact"
+        assert classify_query('"exact phrase"')[0] == "exact"
+        assert classify_query("some 'quoted' text")[0] == "exact"
 
     def test_classify_query_exact_error(self):
-        assert classify_query("ERROR: connection refused") == "exact"
-        assert classify_query("Error: file not found") == "exact"
+        assert classify_query("ERROR: connection refused")[0] == "exact"
+        assert classify_query("Error: file not found")[0] == "exact"
 
     def test_classify_query_exact_path(self):
         # Paths with `/` and no spaces → "exact" (only if no `.` which triggers symbol first)
-        assert classify_query("src/utils/helper") == "exact"
+        assert classify_query("src/utils/helper")[0] == "exact"
 
 
 # ===========================================================================

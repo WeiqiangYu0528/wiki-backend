@@ -18,26 +18,59 @@ from search.cache import MultiLevelCache
 logger = logging.getLogger(__name__)
 
 
-def classify_query(query: str) -> str:
-    """Classify a query as 'symbol', 'concept', or 'exact'."""
-    if re.match(r"^[A-Z][a-zA-Z0-9]*(?:[A-Z][a-z]+)+$", query.strip()):
-        return "symbol"
-    if re.match(r"^[a-z_][a-z0-9_]*(?:_[a-z0-9]+)+$", query.strip()):
-        return "symbol"
-    if "." in query and " " not in query:
-        return "symbol"
-    words = query.lower().split()
+def classify_query(query: str) -> tuple[str, str]:
+    """Classify a query and extract the target symbol if present.
+
+    Returns:
+        (query_type, effective_query) where query_type is 'symbol', 'concept', or 'exact',
+        and effective_query is the extracted symbol name or the original query.
+    """
+    stripped = query.strip()
+
+    # Pure CamelCase identifier (e.g. "SearchOrchestrator")
+    if re.match(r"^[A-Z][a-zA-Z0-9]*(?:[A-Z][a-z]+)+$", stripped):
+        return "symbol", stripped
+    # Pure snake_case identifier (e.g. "classify_query")
+    if re.match(r"^[a-z_][a-z0-9_]*(?:_[a-z0-9]+)+$", stripped):
+        return "symbol", stripped
+    # Dotted path (e.g. "search.orchestrator")
+    if "." in stripped and " " not in stripped:
+        return "symbol", stripped
+
+    # Extract symbol from natural language: "Explain startMdmRawRead()"
+    # Look for function call patterns first: word()
+    func_call = re.search(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\)', stripped)
+    if func_call:
+        return "symbol", func_call.group(1)
+    # Look for CamelCase identifiers
+    camel_match = re.search(r'\b([A-Z][a-zA-Z0-9]*(?:[A-Z][a-z]+)+)\b', stripped)
+    if camel_match:
+        return "symbol", camel_match.group(1)
+    # Look for snake_case identifiers (3+ chars with underscores)
+    snake_match = re.search(r'\b([a-z_][a-z0-9_]*_[a-z0-9_]+)\b', stripped)
+    if snake_match:
+        return "symbol", snake_match.group(1)
+    # Look for camelCase (lowercase start): startMdmRawRead
+    lower_camel = re.search(r'\b([a-z]+[A-Z][a-zA-Z0-9]*)\b', stripped)
+    if lower_camel:
+        return "symbol", lower_camel.group(1)
+
+    # Keywords like "function", "class", "method" with an adjacent identifier
+    words = stripped.lower().split()
     if any(w in ("function", "class", "method", "def", "interface", "type") for w in words):
-        for w in query.split():
-            if re.match(r"^[A-Z][a-zA-Z0-9]+$", w) or re.match(r"^[a-z_]+[A-Z]", w):
-                return "symbol"
-            if re.match(r"^[a-z_][a-z0-9_]*_[a-z0-9_]+$", w):
-                return "symbol"
-    if query.startswith(("ERROR", "Error", "error")) or '"' in query or "'" in query:
-        return "exact"
-    if "/" in query and " " not in query:
-        return "exact"
-    return "concept"
+        for w in stripped.split():
+            if re.match(r'^[A-Z][a-zA-Z0-9]+$', w) or re.match(r'^[a-z_]+[A-Z]', w):
+                return "symbol", w
+            if re.match(r'^[a-z_][a-z0-9_]*_[a-z0-9_]+$', w):
+                return "symbol", w
+
+    # Exact match patterns
+    if stripped.startswith(("ERROR", "Error", "error")) or '"' in stripped or "'" in stripped:
+        return "exact", stripped
+    if "/" in stripped and " " not in stripped:
+        return "exact", stripped
+
+    return "concept", stripped
 
 
 def format_results(
@@ -143,7 +176,7 @@ class SearchOrchestrator:
 
             namespace = scope if scope not in ("auto", "wiki", "code") else ""
             targets = self.registry.target(query, page_url=page_url, namespace=namespace)
-            query_type = classify_query(query)
+            query_type, effective_query = classify_query(query)
             span.set_attribute("search.query_type", query_type)
 
             all_results: list[dict] = []
@@ -185,7 +218,7 @@ class SearchOrchestrator:
             if self._ready and query_type == "symbol":
                 with tracer.start_as_current_span("search.symbol") as sym_span:
                     t0 = time.time()
-                    symbol_results = self.semantic.query("symbols", query, n_results=5)
+                    symbol_results = self.semantic.query("symbols", effective_query, n_results=5)
                     sym_span.set_attribute("search.results_count", len(symbol_results))
                     sym_span.set_attribute("search.duration_ms", int((time.time() - t0) * 1000))
                 all_results.extend(symbol_results)

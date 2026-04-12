@@ -122,7 +122,7 @@ class TestQueryClassificationAccuracy:
         correct = 0
         total = len(self.SYMBOL_QUERIES)
         for query, expected in self.SYMBOL_QUERIES:
-            result = classify_query(query)
+            result = classify_query(query)[0]
             if result == expected:
                 correct += 1
         accuracy = correct / total
@@ -132,7 +132,7 @@ class TestQueryClassificationAccuracy:
         correct = 0
         total = len(self.CONCEPT_QUERIES)
         for query, expected in self.CONCEPT_QUERIES:
-            result = classify_query(query)
+            result = classify_query(query)[0]
             if result == expected:
                 correct += 1
         accuracy = correct / total
@@ -142,7 +142,7 @@ class TestQueryClassificationAccuracy:
         correct = 0
         total = len(self.EXACT_QUERIES)
         for query, expected in self.EXACT_QUERIES:
-            result = classify_query(query)
+            result = classify_query(query)[0]
             if result == expected:
                 correct += 1
         accuracy = correct / total
@@ -150,9 +150,58 @@ class TestQueryClassificationAccuracy:
 
     def test_overall_classification_accuracy(self):
         all_queries = self.SYMBOL_QUERIES + self.CONCEPT_QUERIES + self.EXACT_QUERIES
-        correct = sum(1 for q, exp in all_queries if classify_query(q) == exp)
+        correct = sum(1 for q, exp in all_queries if classify_query(q)[0] == exp)
         accuracy = correct / len(all_queries)
         assert accuracy >= 0.75, f"Overall classification accuracy {accuracy:.0%} < 75% threshold"
+
+
+class TestClassifyQuerySymbolExtraction:
+    """Test that classify_query extracts symbols from natural language queries."""
+
+    def test_explain_camelcase_function(self):
+        qtype, extracted = classify_query("Explain startMdmRawRead()")
+        assert qtype == "symbol"
+        assert extracted == "startMdmRawRead"
+
+    def test_where_is_function(self):
+        qtype, extracted = classify_query("Where is SearchOrchestrator implemented?")
+        assert qtype == "symbol"
+        assert extracted == "SearchOrchestrator"
+
+    def test_who_calls_snake_case(self):
+        qtype, extracted = classify_query("Who calls classify_query?")
+        assert qtype == "symbol"
+        assert extracted == "classify_query"
+
+    def test_pure_concept_query(self):
+        qtype, extracted = classify_query("How does the agent handle errors?")
+        assert qtype == "concept"
+        assert extracted == "How does the agent handle errors?"
+
+    def test_pure_symbol_unchanged(self):
+        qtype, extracted = classify_query("SearchOrchestrator")
+        assert qtype == "symbol"
+        assert extracted == "SearchOrchestrator"
+
+    def test_function_call_syntax(self):
+        qtype, extracted = classify_query("What does build_prompt() do?")
+        assert qtype == "symbol"
+        assert extracted == "build_prompt"
+
+    def test_exact_error_unchanged(self):
+        qtype, extracted = classify_query("ERROR: file not found")
+        assert qtype == "exact"
+        assert extracted == "ERROR: file not found"
+
+    def test_mixed_nl_with_lower_camel(self):
+        qtype, extracted = classify_query("How does startMdmRawRead work?")
+        assert qtype == "symbol"
+        assert extracted == "startMdmRawRead"
+
+    def test_nl_with_class_keyword(self):
+        qtype, extracted = classify_query("Find the class RepoRegistry")
+        assert qtype == "symbol"
+        assert extracted == "RepoRegistry"
 
 
 # ===========================================================================
@@ -868,7 +917,7 @@ class TestLexicalDefinitionBoost:
         """A line containing 'def classify_query' should score higher than a comment mentioning it."""
         from search.lexical import LexicalSearch
         ls = LexicalSearch(ROOT_DIR)
-        definition_line = "def classify_query(query: str) -> str:"
+        definition_line = "def classify_query(query: str) -> tuple[str, str]:"
         comment_line = "# classify_query handles query classification"
         def_score = ls._score_match("backend/search/orchestrator.py", "classify_query", definition_line)
         comment_score = ls._score_match("backend/search/orchestrator.py", "classify_query", comment_line)
