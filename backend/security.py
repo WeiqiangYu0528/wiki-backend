@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     embedding_provider: str = "ollama"
 
     # CORS
-    cors_origins: str = "http://localhost:8000,http://localhost:8001"
+    cors_origins: str = "http://localhost:8000,http://localhost:8001,https://weiqiangyu0528.github.io"
 
     # Environment mode
     environment: str = "development"
