@@ -391,7 +391,7 @@ def run_agent(
 
         reset_strategy_engine()
         llm = get_chat_model(model_id)
-        agent = create_react_agent(llm, tools=tools, recursion_limit=25)
+        agent = create_react_agent(llm, tools=tools)
 
         system_prompt = build_system_prompt(page_context)
         history = _format_history(chat_history)
@@ -417,7 +417,7 @@ def run_agent(
         span.set_attribute("llm.messages", json.dumps(messages, ensure_ascii=False))
 
         try:
-            response = agent.invoke({"messages": messages})
+            response = agent.invoke({"messages": messages}, config={"recursion_limit": 25})
             reply = response["messages"][-1].content
             span.set_attribute("llm.response", str(reply))
             duration_ms = int((time.time() - start_time) * 1000)
@@ -511,7 +511,7 @@ async def run_agent_stream(
 
         reset_strategy_engine()
         llm = get_chat_model(model_id)
-        agent = create_react_agent(llm, tools=tools, recursion_limit=25)
+        agent = create_react_agent(llm, tools=tools)
 
         system_prompt = build_system_prompt(page_context)
         history = _format_history(chat_history)
@@ -543,7 +543,7 @@ async def run_agent_stream(
         full_reply = ""
 
         try:
-            async for event in agent.astream_events({"messages": messages}, version="v2"):
+            async for event in agent.astream_events({"messages": messages}, config={"recursion_limit": 25}, version="v2"):
                 event_type = event["event"]
 
                 if event_type == "on_chat_model_stream":

@@ -32,6 +32,10 @@ deepagents/
 openclaw/
 opencode/
 hermes-agent/
+claude_code/
+
+# Runtime data
+backend/data/
 
 # Editor config
 .obsidian/

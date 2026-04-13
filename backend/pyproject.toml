@@ -24,6 +24,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.46b0",
     "opentelemetry-instrumentation-httpx>=0.46b0",
     "meilisearch>=0.40.0",
+    "chromadb>=0.5.0",
 ]
 
 [tool.uv]
